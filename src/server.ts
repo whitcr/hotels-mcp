@@ -204,7 +204,7 @@ app.use((error: unknown, _request: Request, response: Response, _next: NextFunct
   }
 });
 
-const httpServer = app.listen(config.port, "0.0.0.0", () => {
+const httpServer = app.listen(config.port, "127.0.0.1", () => {
   console.log(`hotels24-mcp listening on port ${config.port}`);
 });
 
