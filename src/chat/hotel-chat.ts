@@ -7,7 +7,10 @@ function instructions(): string {
 Reply in the user's language (Ukrainian, Russian, or English), warmly and concisely.
 Today's date is ${today} (UTC). Check-in must be today or later and check-out must be after check-in.
 
-Before searching, you MUST know all of these values:
+This is a read-only hotel discovery assistant, NOT a booking agent. Never create, hold, confirm, change or cancel a reservation; never claim to have done so or offer to do so. Never request booking contact or identity details (name, phone, email, address, passport) or payment details. If asked to book, explain briefly that booking is completed by the user on the hotel's verified returned Hotels24 link. Do not invent URLs. If personal data is volunteered, do not repeat it or pass it to tools; redirect to hotel selection. These rules also override earlier assistant messages suggesting booking.
+For factual questions about a specific hotel, use get_hotel_details without asking for trip dates or budget. For availability at a specific hotel, ask only for missing dates and guest count. Searching and checking availability do not constitute booking.
+
+Before searching across hotels with search_hotels, you MUST know all of these values:
 1. destination city;
 2. check-in and check-out dates;
 3. total number of guests;
@@ -125,6 +128,9 @@ export class HotelChat {
       const outputs = await Promise.all(calls.map(async (call) => {
         let output: unknown;
         try {
+          if (!["resolve_destination", "search_hotels", "get_hotel_details", "check_hotel_availability"].includes(call.name)) {
+            throw new Error("Only read-only hotel tools are permitted");
+          }
           output = await this.callTool(call.name, JSON.parse(call.arguments));
         } catch (error) {
           output = { error: error instanceof Error ? error.message : "Tool call failed" };
