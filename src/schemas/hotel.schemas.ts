@@ -20,6 +20,7 @@ export const searchHotelsInput = {
   stars: z.array(z.number().int().min(1).max(5)).max(5).optional(),
   hotel_types: z.array(z.number().int().positive()).max(20).optional(),
   exclude_hostels: z.boolean().default(false),
+  exclude_hotel_ids: z.array(z.number().int().positive()).max(50).default([]),
   customer_request: z.string().trim().min(2).max(500).optional(),
   preferences: z.array(z.string().trim().min(2).max(80)).max(15).default([]),
   language: languageSchema,

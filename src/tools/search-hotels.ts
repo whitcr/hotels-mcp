@@ -16,6 +16,7 @@ export function registerSearchHotels(server: McpServer, { client, maxResults, ho
     if (args.check_in >= args.check_out) throw new Error("check_out must be after check_in");
     const today = new Date().toISOString().slice(0, 10);
     if (args.check_in < today) throw new Error(`check_in must not be in the past; today is ${today}`);
+    const excluded = new Set(args.exclude_hotel_ids);
     const availability = filterAvailabilityByBudget(mapAvailability(await client.getAvailability({
       cityIds: [args.city_id],
       checkIn: args.check_in,
@@ -24,7 +25,7 @@ export function registerSearchHotels(server: McpServer, { client, maxResults, ho
       stars: args.stars,
       hotelTypes: args.hotel_types,
       excludeHostels: args.exclude_hostels,
-    })), args.budget_max, args.budget_type).slice(0, Math.min(maxResults * 2, 50));
+    })), args.budget_max, args.budget_type).filter((hotel) => !excluded.has(hotel.hotelId)).slice(0, Math.min(maxResults * 2, 50));
     if (!availability.length) {
       return {
         currency: "UAH",
@@ -33,7 +34,7 @@ export function registerSearchHotels(server: McpServer, { client, maxResults, ho
         customer_request: args.customer_request ?? null,
         budget: { max: args.budget_max, type: args.budget_type, currency: args.budget_currency },
         result_count: 0,
-        response_guidance: ["Tell the customer that no live availability matched the city, dates, guest count, filters, and confirmed budget. Suggest changing one constraint; do not silently ignore the budget."],
+        response_guidance: ["Tell the customer that no new live availability matched the city, dates, guest count, filters, excluded hotels, and confirmed budget. Do not repeat excluded hotels. Suggest changing one constraint; do not silently ignore the budget."],
         hotels: [],
       };
     }
