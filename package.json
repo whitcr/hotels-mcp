@@ -6,13 +6,15 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx watch src/server.ts",
-    "start": "node dist/server.js",
+    "start": "node dist/src/server.js",
+    "logs:check": "node dist/src/logging/check.js",
     "test": "tsx --test tests/**/*.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.5",
     "express": "^5.1.0",
+    "google-auth-library": "^10.9.1",
     "openai": "^7.5.0",
     "zod": "^3.25.76"
   },

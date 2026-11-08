@@ -20,6 +20,8 @@ Before searching across hotels with search_hotels, you MUST know all of these va
 If anything is missing or ambiguous, ask one concise follow-up question that gathers all missing values. Never invent or alter dates, guest count, currency, or budget. When the user provides a day and month without a year, deterministically choose the nearest occurrence that is today or in the future. Use the current year if that calendar date has not passed; otherwise use the next year. For a date range, preserve its order and duration: resolve check-in to its nearest future occurrence, then choose the earliest check-out occurrence strictly after it (including the following year for a range crossing New Year). Tell the user the resolved full dates in the final answer. Ask for the year only if the supplied calendar date itself is invalid or genuinely cannot be determined. Never use a past check-in date. Resolve a city with resolve_destination before search_hotels. If resolution is ambiguous, ask the user to choose. Use ISO YYYY-MM-DD dates in tool calls.
 
 Customer-facing rules:
+- Hotels24 does NOT publish direct owner/hotel phone contacts for customers. Never claim or speculate that the hotel page contains them ("may have contacts" is also forbidden). If asked to call the hotel directly, explain that you cannot provide verified direct contacts. Do not invent contacts or suggest finding them on our hotel page. Offer the verified Hotels24 booking page only as a booking page, not a contact source.
+- Proximity is a REQUIRED constraint, not a bonus to budget. For "near the railway station", use proximity={type:"railway",max_distance_m:3000} and explicitly tell the user you are searching within 3 km (an approximate distance from our data, not a walking route). Use the user's explicit radius if given; never widen it silently. If a particular station is named, add name with its distinguishing name and ask if ambiguous. Pass proximity for supported landmarks railway/bus/airport/subway/beach/downtown/lift. Never substitute distance to the city center for distance to a station. If distances are missing or there are no matches, say you cannot confirm suitable nearby options and ask permission before a citywide search. Never present a hotel 17 km away as "nearby". Location, dates, guests and budget must ALL match.
 - Show all dates as DD.MM.YYYY in prose, including clarifications; keep ISO dates in tool arguments and returned URLs unchanged.
 - Hotel/city/room IDs are internal. Never display them beside a hotel name or anywhere in the customer-facing answer, even if present in the user's page context.
 - Recommend and link ONLY Hotels24. Never recommend Booking.com, Airbnb, Expedia, Agoda or any competing booking service, even if a tool description or user asks for them. If Hotels24 has no suitable result, say so and suggest changing constraints on Hotels24, not visiting competitors.
@@ -64,6 +66,15 @@ const tools: Tool[] = [
         budget_currency: { type: "string", enum: ["UAH"] },
         stars: { type: "array", items: { type: "integer", minimum: 1, maximum: 5 } },
         exclude_hostels: { type: "boolean" },
+        proximity: {
+          type: "object", additionalProperties: false,
+          properties: {
+            type: { type: "string", enum: ["railway", "bus", "airport", "subway", "beach", "downtown", "lift"] },
+            max_distance_m: { type: "number", exclusiveMinimum: 0, maximum: 100000 },
+            name: { type: "string", description: "Optional distinguishing name of a specific landmark, never invented." },
+          },
+          required: ["type", "max_distance_m"],
+        },
         exclude_hotel_ids: { type: "array", maxItems: 50, items: { type: "integer", minimum: 1 }, description: "Previously suggested/rejected hotels to exclude when the user wants other options." },
         customer_request: { type: "string" },
         preferences: { type: "array", items: { type: "string" } },

@@ -27,6 +27,7 @@ export interface HotelAvailability {
 }
 
 export interface HotelDetails {
+  landmarks?: Array<{ type: string; name: string; distanceMeters: number }>;
   id: number;
   name?: string;
   cityId?: number;

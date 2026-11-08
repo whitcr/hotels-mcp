@@ -1,4 +1,12 @@
 node_modules
 dist
 .env
+.env.*
+secrets
+config/google-service-account.json
+*service-account*.json
+chat-log-queue
+bigquery*.json*
+*-credentials.json
+.git
 npm-debug.log

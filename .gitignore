@@ -2,3 +2,10 @@ node_modules/
 dist/
 .env
 *.log
+.env.*
+!.env.example
+secrets/
+chat-log-queue/
+bigquery*.json*
+*-credentials.json
+*service-account*.json

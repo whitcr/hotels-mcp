@@ -8,8 +8,15 @@ import { HotelChat } from "./chat/hotel-chat.js";
 import { HotelsApiClient } from "./clients/hotels-api.client.js";
 import { loadConfig } from "./config.js";
 import { registerHotelTools } from "./tools/index.js";
+import { bigQueryWriter, logConfig } from "./logging/bigquery.js";
+import { makeEvent, telemetrySchema } from "./logging/events.js";
+import { ChatLogQueue } from "./logging/queue.js";
 
 const config = loadConfig();
+const logging = logConfig();
+const chatLogs = logging ? new ChatLogQueue(logging.directory, bigQueryWriter(logging)) : undefined;
+console.log(JSON.stringify({ level: "info", event: "chat_logging", enabled: Boolean(chatLogs) }));
+chatLogs?.start();
 const app = express();
 app.disable("x-powered-by");
 app.use(express.json({ limit: "1mb" }));
@@ -22,7 +29,8 @@ interface RateBucket {
 const rateBuckets = new Map<string, RateBucket>();
 
 app.use((request, response, next) => {
-  const requestId = request.header("x-request-id")?.slice(0, 128) || randomUUID();
+  const suppliedRequestId = request.header("x-request-id");
+  const requestId = suppliedRequestId && /^[a-zA-Z0-9_-]{12,128}$/.test(suppliedRequestId) ? suppliedRequestId : randomUUID();
   const startedAt = Date.now();
   response.locals.requestId = requestId;
   response.set({
@@ -164,9 +172,28 @@ app.post("/chat", requireAllowedOrigin, rateLimit, requireAuth, async (request, 
     response.status(400).json({ error: "previous_response_id is invalid", request_id: response.locals.requestId });
     return;
   }
+  const parsedTelemetry = telemetrySchema.safeParse(request.body?.telemetry);
+  const telemetry = parsedTelemetry.success ? parsedTelemetry.data : undefined;
+  const chatId = telemetry?.chat_id || randomUUID();
+  const context = {
+    chat_id: chatId, request_id: response.locals.requestId as string,
+    environment: telemetry?.environment || logging?.environment || "local",
+    chat_language: telemetry?.language || null, chat_context: telemetry?.context || null,
+  };
+  const startedAt = Date.now();
+  await chatLogs?.enqueue(makeEvent(context, { event_type: "user_message", role: "user", message: telemetry?.message || message }));
   try {
-    response.json(await hotelChat.respond(message, previousResponseId));
+    const result = await hotelChat.respond(message, previousResponseId);
+    await chatLogs?.enqueue(makeEvent(context, {
+      event_type: "assistant_message", role: "assistant", message: result.message,
+      response_ms: Date.now() - startedAt, model: config.openAiModel,
+    }));
+    response.json({ ...result, chat_id: chatId });
   } catch (error) {
+    await chatLogs?.enqueue(makeEvent(context, {
+      event_type: "error", error_code: "chat_generation_failed", response_ms: Date.now() - startedAt,
+      model: config.openAiModel,
+    }));
     next(error);
   }
 });
@@ -210,7 +237,8 @@ const httpServer = app.listen(config.port, "127.0.0.1", () => {
 
 function shutdown(signal: string): void {
   console.log(JSON.stringify({ level: "info", event: "shutdown", signal }));
-  httpServer.close((error) => {
+  httpServer.close(async (error) => {
+    await chatLogs?.close();
     if (error) {
       console.error(error);
       process.exitCode = 1;

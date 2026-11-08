@@ -21,6 +21,11 @@ export const searchHotelsInput = {
   hotel_types: z.array(z.number().int().positive()).max(20).optional(),
   exclude_hostels: z.boolean().default(false),
   exclude_hotel_ids: z.array(z.number().int().positive()).max(50).default([]),
+  proximity: z.object({
+    type: z.enum(["railway", "bus", "airport", "subway", "beach", "downtown", "lift"]),
+    max_distance_m: z.number().positive().max(100000).default(3000),
+    name: z.string().trim().min(2).max(120).optional(),
+  }).optional(),
   customer_request: z.string().trim().min(2).max(500).optional(),
   preferences: z.array(z.string().trim().min(2).max(80)).max(15).default([]),
   language: languageSchema,
@@ -77,6 +82,7 @@ const hotelDetailsOutput = z.object({
   checkOut: z.string().optional(),
   url: z.string().url().optional(),
   matchReasons: z.array(z.string()),
+  landmarks: z.array(z.object({ type: z.string(), name: z.string(), distanceMeters: z.number().nonnegative() })).optional(),
 });
 
 export const resolveDestinationOutput = {

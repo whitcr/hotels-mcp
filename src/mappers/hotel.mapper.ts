@@ -44,6 +44,15 @@ export function mapHotelDetails(payload: unknown, language: string, publicBaseUr
     return [{
       id,
       name: localized(record.name, language),
+      landmarks: array(object(record.tags)?.geo).flatMap((tag) => {
+        const value = object(tag);
+        const distance = value?.distance;
+        if (distance === null || distance === undefined || distance === "" || typeof distance === "boolean") return [];
+        const meters = number(distance);
+        const type = string(value?.name);
+        if (!type || meters === undefined || meters < 0) return [];
+        return [{ type, name: localized(value?.valueLang, language) ?? type, distanceMeters: meters }];
+      }),
       cityId: number(record.city_id ?? record.cityId),
       city: localized(record.city ?? record.cityName, language),
       address: localized(record.address, language),

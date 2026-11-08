@@ -1,5 +1,7 @@
 # Hotels24 MCP server
 
+Журналювання переписок у BigQuery: [налаштування, перевірка та запити українською](BIGQUERY.md).
+
 Production-oriented, read-only MCP adapter over the legacy Hotels24 API. It exposes four tools:
 
 - `resolve_destination`

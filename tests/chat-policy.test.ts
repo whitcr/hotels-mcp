@@ -25,6 +25,8 @@ it("sends updated policy every turn and rejects non-read-only tool calls", async
     assert.match(request.instructions, /Never recommend Booking.com/);
     assert.match(request.instructions, /NEW search/);
     assert.match(request.instructions, /No dedicated booking phone/);
+    assert.match(request.instructions, /does NOT publish direct owner\/hotel phone contacts/);
+    assert.match(request.instructions, /Proximity is a REQUIRED constraint/);
   }
   assert.match(requests[1].input[0].output, /Only read-only/);
   assert(requests[0].tools.find((t: any) => t.name === "search_hotels").parameters.properties.exclude_hotel_ids);
