@@ -11,6 +11,7 @@ export function array(value: unknown): unknown[] {
 }
 
 export function number(value: unknown): number | undefined {
+  if ((typeof value !== "number" && typeof value !== "string") || (typeof value === "string" && !value.trim())) return undefined;
   const parsed = typeof value === "number" ? value : Number(value);
   return Number.isFinite(parsed) ? parsed : undefined;
 }

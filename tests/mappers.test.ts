@@ -22,8 +22,8 @@ describe("legacy response mappers", () => {
       arrival_date: "2026-09-10",
       departure_date: "2026-09-12",
       block: [
-        { block_id: 10, block_price: 2000, min_price: { price: 4000, currency: "UAH" } },
-        { block_id: 11, block_price: 1500, min_price: { price: 3000, currency: "UAH" } },
+        { block_id: 10, price_type: 1, block_price: 2000, min_price: { price: 4000, currency: "UAH" } },
+        { block_id: 11, price_type: 1, block_price: 1500, min_price: { price: 3000, currency: "UAH" } },
       ],
     }] });
     const details = mapHotelDetails([{

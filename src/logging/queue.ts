@@ -72,8 +72,12 @@ export class ChatLogQueue {
           try { await file.writeFile(data); await file.sync(); } finally { await file.close(); }
           await rename(temp, target);
           this.pending.set(name, size); this.bytes += size;
-          const dir = await open(this.directory, "r");
-          try { await dir.sync(); } finally { await dir.close(); }
+          // Windows cannot open/fsync a directory using Node's POSIX-style
+          // handle. The file itself was synced before the atomic rename.
+          if (process.platform !== "win32") {
+            const dir = await open(this.directory, "r");
+            try { await dir.sync(); } finally { await dir.close(); }
+          }
         } catch (error) {
           await unlink(temp).catch(() => undefined);
           throw error;

@@ -36,6 +36,13 @@ export function mapHotelDetails(payload: unknown, language: string, publicBaseUr
     const descriptions = object(record.descriptions);
     const description = object(descriptions?.description ?? descriptions?.main);
     const media = object(record.media);
+    const hotelTypeId = number(record.hoteltype_id);
+    const propertyType = localized(record.hotel_type_name ?? record.hotel_type, language);
+    // Hotels24's property-type directory identifies hostels as 13. The legacy
+    // availability exclude_hostel flag only excludes per-bed tariffs.
+    const isHostel = hotelTypeId === 13 || /(?:hostel|хостел)/iu.test(propertyType ?? "")
+      ? true
+      : ((hotelTypeId !== undefined && hotelTypeId > 0) || propertyType ? false : undefined);
     const photos = array(media?.photos ?? record.photos ?? [record.hotel_photo, record.our_url_original]).flatMap((photo) => {
       const photoRecord = object(photo);
       const url = string(photoRecord?.url ?? photoRecord?.src ?? photo);
@@ -44,6 +51,9 @@ export function mapHotelDetails(payload: unknown, language: string, publicBaseUr
     return [{
       id,
       name: localized(record.name, language),
+      hotelTypeId,
+      propertyType,
+      isHostel,
       landmarks: array(object(record.tags)?.geo).flatMap((tag) => {
         const value = object(tag);
         const distance = value?.distance;
@@ -58,7 +68,8 @@ export function mapHotelDetails(payload: unknown, language: string, publicBaseUr
       address: localized(record.address, language),
       description: conciseText(localized(description?.text ?? descriptions?.shortInfo ?? descriptions?.info ?? descriptions?.text ?? record.description, language), 1_500),
       stars: number(record.class ?? record.stars),
-      rating: number(record.rating ?? record.grade ?? record.ratingConversion),
+      // Legacy hotel-info's "rating" is ratingConversion, not a guest review
+      // score. Do not expose it as a customer-facing rating or percentage.
       longitude: number(coordinates[0] ?? location?.longitude ?? record.longitude),
       latitude: number(coordinates[1] ?? location?.latitude ?? record.latitude),
       facilities: textList(record.facilities, language),
@@ -132,8 +143,10 @@ export function mergeSearchResults(
         totalPrice: cheapest?.totalPrice,
         pricePerNight: cheapest?.pricePerNight,
         availableRooms: entry.rooms.length,
-        rooms: entry.rooms.slice(0, 3),
-        rating: hotel.rating ?? entry.ratingConversion,
+        rooms: rooms.slice(0, 3),
+        priceBasis: cheapest?.priceBasis,
+        pricedGuests: cheapest?.pricedGuests,
+        quantity: cheapest?.quantity,
       };
     })
     .filter((hotel) => {

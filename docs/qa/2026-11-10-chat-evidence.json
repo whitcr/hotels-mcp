@@ -1,0 +1,3684 @@
+{
+  "date": "2026-11-10",
+  "commit": "1132c9168ca9b17d88ab3682a8e2a527efc1d1e6",
+  "model": "gpt-5-mini",
+  "synthetic_only": true,
+  "started_at": "2026-11-10T14:30:44.991Z",
+  "finished_at": "2026-11-10T14:38:03.976Z",
+  "mcp_http": [
+    {
+      "name": "unauthenticated",
+      "status": 401,
+      "expected": 401,
+      "pass": true
+    },
+    {
+      "name": "empty_message",
+      "status": 400,
+      "expected": 400,
+      "pass": true
+    },
+    {
+      "name": "invalid_previous_id",
+      "status": 400,
+      "expected": 400,
+      "pass": true
+    },
+    {
+      "name": "real_chat",
+      "status": 200,
+      "ms": 8894,
+      "data": {
+        "message": "Привіт! Щоб шукати — підкажіть, будь ласка, у одному повідомленні:\n\n1) місто;  \n2) дати заїзду та виїзду (DD.MM.YYYY або просто день+місяць);  \n3) кількість гостей;  \n4) максимальний бюджет у грн;  \n5) це бюджет за ніч чи за весь період?\n\nЗа бажанням додайте: кількість зірок, чи уникати хостелів, або чи потрібна близькість до чогось (вокзал/аеропорт/центр/метро/пляж/автовокзал — та максимальний радіус в метрах). Зауважу: заїзд має бути сьогодні (10.11.2026) або пізніше."
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "missing_fields_uk",
+      "turns": [
+        {
+          "prompt": "Хочу готель.",
+          "answer": "З радістю допоможу! Напишіть, будь ласка, у одному повідомленні:\n\n1) місто;  \n2) дати заїзду та виїзду (дд.мм або YYYY-MM-DD);  \n3) кількість гостей;  \n4) максимальний бюджет у UAH;  \n5) це бюджет за ніч чи за весь період?\n\nЗа бажанням додайте опціонально: бажану кількість зірок або proximity (наприклад «біля вокзалу» / «біля аеропорту» / «в центрі»).",
+          "ms": 6195,
+          "tools": []
+        }
+      ]
+    },
+    {
+      "id": "original_weekend_ru",
+      "turns": [
+        {
+          "prompt": "Хочу готель в Киеве на эти выходные в центре для двоих.",
+          "answer": "Чудово — підкажіть, будь ласка, ще кілька деталей, щоб я міг шукати в центрі Києва для двох:\n\n1) Дати заїзду і виїзду (маєте на увазі ці вихідні — 14.11.2026–15.11.2026?),  \n2) Максимальний бюджет у UAH і чи це за ніч чи за весь період,  \n3) Чи підходить радіус пошуку «у центрі» 3 км від центру міста (так/ні або вкажіть інший радіус).\n\nВідповідь однією фразою підійде.",
+          "ms": 11649,
+          "tools": []
+        },
+        {
+          "prompt": "Да, 1000 гривен за ночь.",
+          "answer": "Подходит радиус 3 км от центра Киева для поиска (заезд 14.11.2026 — выезд 15.11.2026, 2 гостя, 1000 UAH за ночь)?",
+          "ms": 12319,
+          "tools": []
+        }
+      ]
+    },
+    {
+      "id": "station_one_night",
+      "turns": [
+        {
+          "prompt": "Львів, 20–21 листопада, двоє дорослих, бюджет до 3000 грн. Потрібен готель не далі 3 км від залізничного вокзалу. Хостели не підходять.",
+          "answer": "Добре — уточнив і знайшов варіанти для Львова на 20.11.2026–21.11.2026 (1 ніч) для 2 дорослих; бюджет до 3000 грн за весь період. Шукаю в радіусі 3 км від залізничного вокзалу (прибл. 3 км). Я відфільтрував хостели за вашим запитом — нижче тільки не‑хостельні варіанти.\n\n- [Центрум Апартаментс](https://hotels24.ua/uk/Lviv/Mini-hotel-Centrum-Apartaments-15599.html) — апарт-готель в історичній будівлі, близько 2,7 км від залізничного вокзалу; загальна ціна 1 150 грн за ніч. Є безкоштовний Wi‑Fi, пральня, спільна кухня та безконтактне заселення.\n- [Austrian Apartment with two bedrooms VIP](https://hotels24.ua/uk/Lviv/Apartment-Austrian-Apartment-with-two-bedrooms-VIP-5392.html) — двокімнатні апартаменти в ближньому центрі, приблизно 900 м від вокзалу; загальна ціна 1 799 грн за ніч. У переліку — паркінг, трансфер, повністю обладнана кухня і безконтактне заселення.\n- [DeMar Apart Vakarchuka](https://hotels24.ua/uk/Lviv/Apartment-DeMar-Apart-Vakarchuka-16017.html) — затишні апартаменти, близько 2,4 км від залізничного вокзалу; загальна ціна 2 016 грн за ніч. Є Wi‑Fi, кухонне приладдя і безконтактне заселення.\n\nЦіни й наявність можуть змінитися — перед бронюванням будь ласка перевірте остаточну вартість і доступність на сторінці Hotels24 за відповідним посиланням. Хочете, щоб я показав ще варіанти (наприклад ширше радіус, інший бюджет або включити хостели)?",
+          "ms": 35055,
+          "tools": [
+            {
+              "name": "resolve_destination",
+              "args": {
+                "query": "Львів",
+                "language": "uk"
+              },
+              "result": {
+                "destinations": [
+                  {
+                    "id": 18389,
+                    "type": "city",
+                    "name": "Львів, Львівська область, Україна",
+                    "cityId": 18389
+                  }
+                ]
+              },
+              "ms": 18
+            },
+            {
+              "name": "search_hotels",
+              "args": {
+                "city_id": 18389,
+                "check_in": "2026-11-20",
+                "check_out": "2026-11-21",
+                "guests": 2,
+                "budget_max": 3000,
+                "budget_type": "total",
+                "budget_currency": "UAH",
+                "exclude_hostels": true,
+                "proximity": {
+                  "type": "railway",
+                  "max_distance_m": 3000
+                },
+                "customer_request": "Не далі 3 км від залізничного вокзалу, без хостелів.",
+                "language": "uk",
+                "limit": 5
+              },
+              "result": {
+                "currency": "UAH",
+                "check_in": "2026-11-20",
+                "check_out": "2026-11-21",
+                "customer_request": "Не далі 3 км від залізничного вокзалу, без хостелів.",
+                "budget": {
+                  "max": 3000,
+                  "type": "total",
+                  "currency": "UAH"
+                },
+                "result_count": 5,
+                "response_guidance": [
+                  "Proximity is a hard filter, based only on returned landmarks and approximate distances in meters. No route/walking-time claims. Do not relax it.",
+                  "If results are empty, say no suitable hotel could be confirmed in the inspected candidates; missing distances do not mean nearby. Do not claim no hotels exist in the entire city.",
+                  "Answer in the user's language.",
+                  "For each recommended hotel, include its name as a Markdown link using url.",
+                  "Write one or two concise factual sentences using only shortDescription, matchReasons, facilities, rating, location, and live price fields.",
+                  "Explain why it fits the request only when the returned data supports that claim.",
+                  "State that prices and availability may change and should be rechecked before booking."
+                ],
+                "hotels": [
+                  {
+                    "id": 15599,
+                    "name": "Центрум Апартаментс",
+                    "landmarks": [
+                      {
+                        "type": "downtown",
+                        "name": "Площа ринок",
+                        "distanceMeters": 750
+                      },
+                      {
+                        "type": "sight",
+                        "name": "Палац Потоцьких",
+                        "distanceMeters": 15
+                      },
+                      {
+                        "type": "bus",
+                        "name": "Львів",
+                        "distanceMeters": 2700
+                      },
+                      {
+                        "type": "railway",
+                        "name": "Львів",
+                        "distanceMeters": 2700
+                      },
+                      {
+                        "type": "airport",
+                        "name": "Львів",
+                        "distanceMeters": 6500
+                      },
+                      {
+                        "type": "downtown",
+                        "name": "Оперний театр",
+                        "distanceMeters": 750
+                      }
+                    ],
+                    "cityId": 18389,
+                    "city": "Львів",
+                    "address": "Коперника, 20",
+                    "description": "Апарт-готель \"Центрум Апартаментс\" розташований в історичній будівлі міста Львів, в 15 м від Палацу Потоцьких, в 750 м від Оперного театру та площі Ринок. До послуг гостей зручні, комфортні та просторі номери класу \"економ\", \"стандарт\" та \"сімейний\", з усім необхідним для проживання. Спільний санвузол, розташований на поверсі. Деякі номери категорії \"стандарт\" та \"сімейний\" мають власну ванну кімнату. По всій території надається безкоштовний Wi-Fi. В апарт-готелі можна замовити сніданок та каву додатково повідомивши адміністратора. Відстань від апарт-готелю \"Центрум Апартаментс\" до залізничного та автовокзалу 2,7 км, до аеропорту 6,5 км.",
+                    "stars": 0,
+                    "rating": 68.6144578313253,
+                    "longitude": 24.026256815344233,
+                    "latitude": 49.838357940239135,
+                    "facilities": [
+                      "Інтернет",
+                      "Пральня",
+                      "Послуги по прасуванню одягу",
+                      "Щоденне прибирання номера",
+                      "Спільна кухня",
+                      "Холодильник",
+                      "Мікрохвильова піч",
+                      "Електричний чайник",
+                      "Кухонне приладдя",
+                      "Безконтактне заселення"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/140/14015/1401537/Apart-otel-Centrum-Apartaments-Lvov-otzyvy-1401537.jpg",
+                      "partner_hotel/facility/140/14015/1401537/Apart-otel-Centrum-Apartaments-Lvov-otzyvy-1401537.jpg"
+                    ],
+                    "checkIn": "2026-11-20",
+                    "checkOut": "2026-11-21",
+                    "url": "https://hotels24.ua/uk/Lviv/Mini-hotel-Centrum-Apartaments-15599.html",
+                    "shortDescription": "Апарт-готель \"Центрум Апартаментс\" розташований в історичній будівлі міста Львів, в 15 м від Палацу Потоцьких, в 750 м від Оперного театру та площі Ринок. До послуг гостей зручні, комфортні та просторі номери класу \"економ\", \"стандарт\" та \"сімейний\", з усім необхідним для…",
+                    "matchReasons": [
+                      "Безконтактне заселення"
+                    ],
+                    "matchScore": 1,
+                    "currency": "UAH",
+                    "totalPrice": 1150,
+                    "pricePerNight": 1150,
+                    "availableRooms": 4,
+                    "rooms": [
+                      {
+                        "blockId": 61024,
+                        "tariffId": "66d549bd60a08e3fba1ae597",
+                        "name": "Стандарт двомісний Нью Йорк",
+                        "maxOccupancy": 2,
+                        "totalPrice": 1150,
+                        "pricePerNight": 1150,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 61025,
+                        "tariffId": "66d54aa517229d6a0e618ead",
+                        "name": "Стандарт двомісний Лондон",
+                        "maxOccupancy": 2,
+                        "totalPrice": 1150,
+                        "pricePerNight": 1150,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 61022,
+                        "tariffId": "66d54940b9704d7b1a2048c1",
+                        "name": "Стандарт двомісний Львів № 3 з санвузлом",
+                        "maxOccupancy": 2,
+                        "totalPrice": 1300,
+                        "pricePerNight": 1300,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 17152,
+                    "name": "Fortuna",
+                    "landmarks": [
+                      {
+                        "type": "railway",
+                        "name": "Львів",
+                        "distanceMeters": 1300
+                      },
+                      {
+                        "type": "bus",
+                        "name": "Львів",
+                        "distanceMeters": 5900
+                      },
+                      {
+                        "type": "downtown",
+                        "name": "downtown",
+                        "distanceMeters": 1600
+                      }
+                    ],
+                    "cityId": 18389,
+                    "city": "Львів",
+                    "address": "Котляревського, 26",
+                    "description": "Хостел \"Fortuna\" розташований в одному з найкомфортніших та престижних районів міста Львів. Зручне розташування та хороше транспортне сполучення дозволяють легко дістатися до будь-якої частини міста. Хостел може комфортно розмістити до 46 гостей. До послуг гостей доступні дві просторі 18-місні кімнати, одна 10-місна кімната та затишна двомісна кімната на другому поверсі. Усі кімнати мають високі стелі, що створює відчуття простору та комфорту. Кожен номер оснащений двоярусними ліжками, в окремих номерах - двоспальне ліжко, камін та балкон. На кожному поверсі є спільна ванна кімната зі зручностями, надаються рушники. На території є безкоштовний доступ до Wi-Fi. На першому поверсі є велика кухня зі всім необхідним кухонним приладдям. За окрему плату можна скористатись послугами сауни та пральні. Відстань до хостелу \"Fortuna\" від залізничного вокзалу 2,7 км, від автовокзалу 5,9 км.",
+                    "stars": 0,
+                    "rating": 75,
+                    "longitude": 24.01192471289748,
+                    "latitude": 49.83149726987413,
+                    "facilities": [
+                      "Інтернет",
+                      "Магазини",
+                      "Пральня",
+                      "Термінал для оплати карткою",
+                      "Сауна",
+                      "Сейф на рецепції",
+                      "Щоденне прибирання номера",
+                      "Спільна кухня",
+                      "Холодильник",
+                      "Мікрохвильова піч",
+                      "Газова / електрична плита",
+                      "Духовка",
+                      "Електричний чайник",
+                      "Кухонне приладдя",
+                      "Безконтактне заселення"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/151/15129/1512948/Hostel-Fortuna-Lvov-zabronirovat-1512948.jpg",
+                      "partner_hotel/facility/151/15129/1512948/Hostel-Fortuna-Lvov-zabronirovat-1512948.jpg"
+                    ],
+                    "checkIn": "2026-11-20",
+                    "checkOut": "2026-11-21",
+                    "url": "https://hotels24.ua/uk/Lviv/Hostel-Fortuna-17152.html",
+                    "shortDescription": "Хостел \"Fortuna\" розташований в одному з найкомфортніших та престижних районів міста Львів. Зручне розташування та хороше транспортне сполучення дозволяють легко дістатися до будь-якої частини міста. Хостел може комфортно розмістити до 46 гостей.…",
+                    "matchReasons": [
+                      "Безконтактне заселення"
+                    ],
+                    "matchScore": 1,
+                    "currency": "UAH",
+                    "totalPrice": 1300,
+                    "pricePerNight": 1300,
+                    "availableRooms": 1,
+                    "rooms": [
+                      {
+                        "blockId": 68300,
+                        "tariffId": "6a297ed48dfe5a7784428a4f",
+                        "name": "Стандарт двомісний +1",
+                        "maxOccupancy": 2,
+                        "totalPrice": 1300,
+                        "pricePerNight": 1300,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 5392,
+                    "name": "Austrian Apartment with two bedrooms VIP",
+                    "landmarks": [
+                      {
+                        "type": "downtown",
+                        "name": "Центр міста",
+                        "distanceMeters": 1670
+                      },
+                      {
+                        "type": "railway",
+                        "name": "railway",
+                        "distanceMeters": 900
+                      },
+                      {
+                        "type": "airport",
+                        "name": "airport",
+                        "distanceMeters": 4000
+                      }
+                    ],
+                    "cityId": 18389,
+                    "city": "Львів",
+                    "address": "ул. Братів Міхновських, 8",
+                    "description": "Двокімнатні апартаменти \"Austrian Apartment with two bedrooms VIP \" розташовані в ближньому центрі Львова, біля Костелу Ольги і Єлизавети, в 600 м від собору св. Юра. Австрійський будинок, чистий під'їзд, кодовий замок. У квартирі очікує вас комфорт і затишок. Світлі кімнати, високі стелі. Спальних місць 2 + 2 на двоспальних ліжках king-size в ізольованих кімнатах різного дизайну. На кухні є все необхідне: газова плита, мікрохвильовка, холодильник, ел. чайник пральна машинка і т. д. Постільна білизна та рушники, тапочки, банні приналежності входять у вартість проживання. Зручна транспортна розв'язка дозволяє добратися в будь-який куточок міста. Для гостей з особистим транспортом є автостоянка. Цілодобовий супермаркет поруч. Ринок \"Привокзальний\" — в пішій доступності. Є послуги трансферу і можливість раннього / пізнього виїзду. У 900 м від апартаментів розташований центральний залізничний вокзал, а в 6 км знаходиться аеропорт.",
+                    "stars": 0,
+                    "rating": 44.857142857142854,
+                    "longitude": 24.004177474975,
+                    "latitude": 49.838326544128,
+                    "facilities": [
+                      "Інтернет",
+                      "Автостоянка",
+                      "Трансфер в/з аеропорту",
+                      "Парковка під охороною",
+                      "Вулична парковка",
+                      "Платний трансфер",
+                      "Екскурсійне бюро",
+                      "Люкс для молодят",
+                      "Персонал розмовляє англійською мовою",
+                      "Холодильник",
+                      "Мікрохвильова піч",
+                      "Газова / електрична плита",
+                      "Духовка",
+                      "Електричний чайник",
+                      "Кавоварка",
+                      "Кухонне приладдя",
+                      "Безконтактне заселення"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/120/12084/1208433/Kvartira-Apartments-in-the-center-ul-Bratev-Mihnovskih-Lvov-otzyvy-1208433.jpg",
+                      "partner_hotel/facility/120/12084/1208433/Kvartira-Apartments-in-the-center-ul-Bratev-Mihnovskih-Lvov-otzyvy-1208433.jpg"
+                    ],
+                    "checkIn": "2026-11-20",
+                    "checkOut": "2026-11-21",
+                    "url": "https://hotels24.ua/uk/Lviv/Apartment-Austrian-Apartment-with-two-bedrooms-VIP-5392.html",
+                    "shortDescription": "Двокімнатні апартаменти \"Austrian Apartment with two bedrooms VIP \" розташовані в ближньому центрі Львова, біля Костелу Ольги і Єлизавети, в 600 м від собору св. Юра. Австрійський будинок, чистий під'їзд, кодовий замок. У квартирі очікує вас комфорт і затишок.…",
+                    "matchReasons": [
+                      "Безконтактне заселення"
+                    ],
+                    "matchScore": 1,
+                    "currency": "UAH",
+                    "totalPrice": 1799,
+                    "pricePerNight": 1799,
+                    "availableRooms": 1,
+                    "rooms": [
+                      {
+                        "blockId": 21432,
+                        "tariffId": "555c21ada47819353a8b4567",
+                        "name": "Апартаменти 4-місний",
+                        "maxOccupancy": 4,
+                        "totalPrice": 1799,
+                        "pricePerNight": 1799,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 16017,
+                    "name": "DeMar Apart Vakarchuka",
+                    "landmarks": [
+                      {
+                        "type": "downtown",
+                        "name": "Площа Ринок",
+                        "distanceMeters": 1400
+                      },
+                      {
+                        "type": "bus",
+                        "name": "bus",
+                        "distanceMeters": 5700
+                      },
+                      {
+                        "type": "railway",
+                        "name": "railway",
+                        "distanceMeters": 2400
+                      },
+                      {
+                        "type": "airport",
+                        "name": "Львів",
+                        "distanceMeters": 5800
+                      },
+                      {
+                        "type": "sight",
+                        "name": "Оперний театр",
+                        "distanceMeters": 1600
+                      }
+                    ],
+                    "cityId": 18389,
+                    "city": "Львів",
+                    "address": "Вакарчука, 9 кв 1а",
+                    "description": "Апартаменти \"DeMar Apart Vakarchuka\" розташовані в місті Львів, поруч з Національним університетом \"Львівська політехніка\" та парком імені Івана Франка. До послуг гостей затишні апартаменти, що розташовані на 1 поверсі будинку. У спальній зоні встановлено зручне спальне місце, диван чи двоспальне ліжко, надається постільна білизна, доступ до безкоштовного Wi-Fi, шафа для одягу. Кухня укомплектована холодильником, плитою, електричним чайником, мікрохвильовкою та посудом. В одній з квартир до послуг гостей пральна машина та телевізор з плоским екраном. Санвузол обладнаний туалетом, душовою кабіною, умивальником, рушниками. Зручне розташування апартаментів дозволяє легко дістатися до центру міста. Поруч з будинком є вулична парковка, недалеко розташовані зупинки громадського транспорту. Відстань від апартаментів \"DeMar Apart Vakarchuka\" до Площі Ринок складає 1,4 км, до автовокзалу - 5,7 км, до залізничного вокзалу - 2,4 км. Міжнародний аеропорт \"Львів\" імені Данила Галицького розташований на відстані 5,8 км від будинку.",
+                    "stars": 0,
+                    "rating": 103,
+                    "longitude": 24.0169127,
+                    "latitude": 49.83632110000001,
+                    "facilities": [
+                      "Інтернет",
+                      "Вулична парковка",
+                      "Персонал розмовляє англійською мовою",
+                      "Холодильник",
+                      "Мікрохвильова піч",
+                      "Газова / електрична плита",
+                      "Електричний чайник",
+                      "Кухонне приладдя",
+                      "Безконтактне заселення"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/143/14323/1432376/Otel-DeMar-Apart-Vakarchuka-Lvov-ceny-1432376.jpg",
+                      "partner_hotel/facility/143/14323/1432376/Otel-DeMar-Apart-Vakarchuka-Lvov-ceny-1432376.jpg"
+                    ],
+                    "checkIn": "2026-11-20",
+                    "checkOut": "2026-11-21",
+                    "url": "https://hotels24.ua/uk/Lviv/Apartment-DeMar-Apart-Vakarchuka-16017.html",
+                    "shortDescription": "Апартаменти \"DeMar Apart Vakarchuka\" розташовані в місті Львів, поруч з Національним університетом \"Львівська політехніка\" та парком імені Івана Франка. До послуг гостей затишні апартаменти, що розташовані на 1 поверсі будинку.…",
+                    "matchReasons": [
+                      "Безконтактне заселення"
+                    ],
+                    "matchScore": 1,
+                    "currency": "UAH",
+                    "totalPrice": 2016,
+                    "pricePerNight": 2016,
+                    "availableRooms": 2,
+                    "rooms": [
+                      {
+                        "blockId": 62843,
+                        "tariffId": "67b74ab0f5a39f37011b95a4",
+                        "name": "Студіо двомісний Vakarchuka 2",
+                        "maxOccupancy": 2,
+                        "totalPrice": 2016,
+                        "pricePerNight": 2016,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 62842,
+                        "tariffId": "67b748dc298aae609a673835",
+                        "name": "Апартаменти двомісний (2+2) Vakarchuka 1",
+                        "maxOccupancy": 2,
+                        "totalPrice": 2448,
+                        "pricePerNight": 2448,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 7891,
+                    "name": "У Ельжбети",
+                    "landmarks": [
+                      {
+                        "type": "railway",
+                        "name": "railway",
+                        "distanceMeters": 850
+                      },
+                      {
+                        "type": "downtown",
+                        "name": "театр Опери і балету",
+                        "distanceMeters": 1000
+                      },
+                      {
+                        "type": "downtown",
+                        "name": "університет Франка",
+                        "distanceMeters": 700
+                      },
+                      {
+                        "type": "sight",
+                        "name": "Будинок  вчених",
+                        "distanceMeters": 700
+                      },
+                      {
+                        "type": "sight",
+                        "name": "органний зал",
+                        "distanceMeters": 500
+                      },
+                      {
+                        "type": "downtown",
+                        "name": "Палац Потоцьких",
+                        "distanceMeters": 800
+                      },
+                      {
+                        "type": "bus",
+                        "name": "пл Двірцева",
+                        "distanceMeters": 500
+                      }
+                    ],
+                    "cityId": 18389,
+                    "city": "Львів",
+                    "address": "Хотинська, 2 кв 8",
+                    "description": "Хостел \"У Ельжбети\" розташований на найдовшій вулиці Львова-вул.Городоцькій, в 10 хвилинах від центру міста і 5 хвилинах ходьби від залізничного вокзалу. Номери з двоярусними ліжками. До послуг гостей обладнана всім необхідним спільна кухня, телевізор, три санвузли. Фен, праска знаходяться у адміністратора. Рушники надаються по запиту. Також є окремі апартаменти зі зручностями. У 10 метрах від хостелу трамвайна і тролейбусна зупинка \"церква Ольги і Єлизавети\". До залізничного вокзалу 850 м, Оперний театр - 1,7 км.",
+                    "stars": 0,
+                    "rating": 64.32203389830508,
+                    "longitude": 24.005064816944,
+                    "latitude": 49.837726519166,
+                    "facilities": [
+                      "Інтернет",
+                      "Вулична парковка",
+                      "Екскурсійне бюро",
+                      "Щоденне прибирання номера",
+                      "Персонал розмовляє англійською мовою",
+                      "Спільна кухня",
+                      "Холодильник",
+                      "Мікрохвильова піч",
+                      "Газова / електрична плита",
+                      "Електричний чайник",
+                      "Кухонне приладдя",
+                      "Розміщення з тваринами (до 3 кг)",
+                      "Безконтактне заселення"
+                    ],
+                    "photos": [
+                      "partner_hotel/hotel_main/106/10686/1068612/Hostel-U-Eljbeti-Lvov-zabronirovat-1068612.jpg",
+                      "partner_hotel/hotel_main/106/10686/1068612/Hostel-U-Eljbeti-Lvov-zabronirovat-1068612.jpg"
+                    ],
+                    "checkIn": "2026-11-20",
+                    "checkOut": "2026-11-21",
+                    "url": "https://hotels24.ua/uk/Lviv/Hostel-U-Elzhbety-7891.html",
+                    "shortDescription": "Хостел \"У Ельжбети\" розташований на найдовшій вулиці Львова-вул.Городоцькій, в 10 хвилинах від центру міста і 5 хвилинах ходьби від залізничного вокзалу. Номери з двоярусними ліжками. До послуг гостей обладнана всім необхідним спільна кухня, телевізор, три санвузли.…",
+                    "matchReasons": [
+                      "Безконтактне заселення"
+                    ],
+                    "matchScore": 1,
+                    "currency": "UAH",
+                    "totalPrice": 2400,
+                    "pricePerNight": 2400,
+                    "availableRooms": 2,
+                    "rooms": [
+                      {
+                        "blockId": 34013,
+                        "tariffId": "5a65dfeaa4781988098b4654",
+                        "name": "Економ 4-місний",
+                        "maxOccupancy": 4,
+                        "totalPrice": 2400,
+                        "pricePerNight": 2400,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 39912,
+                        "tariffId": "5c72358da4781955118b45bd",
+                        "name": "Апартаменти 4-місний",
+                        "maxOccupancy": 4,
+                        "totalPrice": 2600,
+                        "pricePerNight": 2600,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              "ms": 1177
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "english_context",
+      "turns": [
+        {
+          "prompt": "Find hotels in Lviv for 2 adults, 20–22 November, up to 3000 UAH per night. No hostels.",
+          "answer": "I searched Lviv for 2 adults, check-in 20.11.2026 — check-out 22.11.2026, max 3000 UAH per night, no hostels. I found these matching properties on Hotels24 (I excluded hostels from the results):\n\n- [Helikon](https://hotels24.ua/en/Lviv/Hotel-Helikon-545.html) — 53-room hotel with free Wi‑Fi and paid parking; price 1,050 UAH/night (2,100 UAH total for 2 nights). Rating ~76.7.  \n- [Tri Koroni](https://hotels24.ua/en/Lviv/Mini-hotel-Tri-Koroni-16472.html) — small hotel about 3.9 km from the railway station, facilities include restaurant, parking and free Wi‑Fi; price 1,100 UAH/night (2,200 UAH total). Rating ~75.9.  \n- [Centrum Apartaments](https://hotels24.ua/en/Lviv/Mini-hotel-Centrum-Apartaments-15599.html) — aparthotel in a historic building ~750 m from Rynok Square/Opera; some rooms have shared bathroom; price 1,150 UAH/night (2,300 UAH total). Rating ~68.6.\n\nPrices and availability can change — please recheck availability on the Hotels24 pages above before booking. Would you like me to show other options, expand the budget, or search for hotels nearer the railway station or the historic center?",
+          "ms": 21165,
+          "tools": [
+            {
+              "name": "resolve_destination",
+              "args": {
+                "query": "Lviv",
+                "language": "en"
+              },
+              "result": {
+                "destinations": [
+                  {
+                    "id": 18389,
+                    "type": "city",
+                    "name": "Lviv, Lviv region, Ukraine",
+                    "cityId": 18389
+                  }
+                ]
+              },
+              "ms": 19
+            },
+            {
+              "name": "search_hotels",
+              "args": {
+                "city_id": 18389,
+                "check_in": "2026-11-20",
+                "check_out": "2026-11-22",
+                "guests": 2,
+                "budget_max": 3000,
+                "budget_type": "per_night",
+                "budget_currency": "UAH",
+                "exclude_hostels": true,
+                "language": "en",
+                "limit": 5
+              },
+              "result": {
+                "currency": "UAH",
+                "check_in": "2026-11-20",
+                "check_out": "2026-11-22",
+                "customer_request": null,
+                "budget": {
+                  "max": 3000,
+                  "type": "per_night",
+                  "currency": "UAH"
+                },
+                "result_count": 5,
+                "response_guidance": [
+                  "Answer in the user's language.",
+                  "For each recommended hotel, include its name as a Markdown link using url.",
+                  "Write one or two concise factual sentences using only shortDescription, matchReasons, facilities, rating, location, and live price fields.",
+                  "Explain why it fits the request only when the returned data supports that claim.",
+                  "State that prices and availability may change and should be rechecked before booking."
+                ],
+                "hotels": [
+                  {
+                    "id": 545,
+                    "name": "Helikon",
+                    "landmarks": [
+                      {
+                        "type": "railway",
+                        "name": "Central'niy",
+                        "distanceMeters": 5000
+                      },
+                      {
+                        "type": "bus",
+                        "name": "bus",
+                        "distanceMeters": 5000
+                      },
+                      {
+                        "type": "downtown",
+                        "name": "downtown",
+                        "distanceMeters": 7000
+                      }
+                    ],
+                    "cityId": 18389,
+                    "city": "Lviv",
+                    "address": "Kulparkivska Str, 230",
+                    "description": "The hotel has 53 rooms of different categories. Each room has comfortable beds, a private bathroom with 24-hour water supply, free WI-FI. Some rooms are equipped with refrigerators. Laundry services are available for an additional fee. Paid parking is available on the territory. There is a cafe near the hotel. The hotel is 5 km from the airport, 5 km from the railway and bus station, and 7 km from the historical center. 15 minutes' drive from Lviv Town Hall. Stryi Park is located less than 4.2 km from the hotel, Lviv Town Hall is a 15-minute drive away. The \"Naukova\" bus stop is a 10-minute walk from the hotel.",
+                    "stars": 0,
+                    "rating": 76.72897196261682,
+                    "longitude": 23.98019591471635,
+                    "latitude": 49.80286409667551,
+                    "facilities": [
+                      "Internet",
+                      "Shops",
+                      "Parking",
+                      "Washing house",
+                      "Secured parking",
+                      "Shelter in a hotel"
+                    ],
+                    "photos": [
+                      "partner_hotel/hotel_main/0/8/866/Gostinica-Gelikon-Lvov-foto-866.jpg",
+                      "partner_hotel/hotel_main/0/8/866/Gostinica-Gelikon-Lvov-foto-866.jpg"
+                    ],
+                    "checkIn": "2026-11-20",
+                    "checkOut": "2026-11-22",
+                    "url": "https://hotels24.ua/en/Lviv/Hotel-Helikon-545.html",
+                    "shortDescription": "The hotel has 53 rooms of different categories. Each room has comfortable beds, a private bathroom with 24-hour water supply, free WI-FI. Some rooms are equipped with refrigerators. Laundry services are available for an additional fee. Paid parking is available on the territory.…",
+                    "matchReasons": [],
+                    "matchScore": 0,
+                    "currency": "UAH",
+                    "totalPrice": 2100,
+                    "pricePerNight": 1050,
+                    "availableRooms": 3,
+                    "rooms": [
+                      {
+                        "blockId": 2367,
+                        "tariffId": "53d5a923a4781937098b75e5",
+                        "name": "Стандарт двомісний",
+                        "maxOccupancy": 2,
+                        "totalPrice": 2100,
+                        "pricePerNight": 1050,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 2368,
+                        "tariffId": "53d5a923a4781937098b75e6",
+                        "name": "Стандарт тримісний",
+                        "maxOccupancy": 3,
+                        "totalPrice": 3300,
+                        "pricePerNight": 1650,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 13353,
+                        "tariffId": "53d5a923a4781937098b75ed",
+                        "name": "Люкс двомісний",
+                        "maxOccupancy": 2,
+                        "totalPrice": 4200,
+                        "pricePerNight": 2100,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 16472,
+                    "name": "Tri Koroni",
+                    "landmarks": [
+                      {
+                        "type": "downtown",
+                        "name": "Оперний театр",
+                        "distanceMeters": 5000
+                      },
+                      {
+                        "type": "railway",
+                        "name": "Залізничний вокзал",
+                        "distanceMeters": 3900
+                      },
+                      {
+                        "type": "bus",
+                        "name": "Двірцевий",
+                        "distanceMeters": 4000
+                      }
+                    ],
+                    "cityId": 18389,
+                    "city": "Lviv",
+                    "address": "Kul'parkivs'ka, 172А",
+                    "description": "The Three Crowns Hotel is located on the third floor of a building, 4.5 km from the historic center of Lviv. It offers comfortable rooms with everything you need for a relaxing stay: a double bed with bedding, a TV, and free Wi-Fi. The bathroom is equipped with a shower, sink, toilet, towels, hairdryer, and toiletries. The hotel has a family restaurant, a supermarket, and parking with video surveillance. Nearby there is a public transport stop, shopping and entertainment centers. The distance from the Three Crowns Hotel to the railway station is 3.9 km, to the Dvirtsovy bus station is 4 km, and to the Opera House is 5 km.",
+                    "stars": 0,
+                    "rating": 75.91666666666666,
+                    "longitude": 23.98176158649082,
+                    "latitude": 49.81391129825631,
+                    "facilities": [
+                      "Bar",
+                      "Business centre",
+                      "Internet",
+                      "Shops",
+                      "Restaurant",
+                      "POS terminal",
+                      "Coffee house on site",
+                      "Secured parking",
+                      "Street parking",
+                      "ATM / Cash Machine on site",
+                      "Microwave",
+                      "Electric kettle",
+                      "Room cleaning on request"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/146/14639/1463907/Mini-otel-Tri-Koroni-Lvov-ceny-1463907.jpg",
+                      "partner_hotel/facility/146/14639/1463907/Mini-otel-Tri-Koroni-Lvov-ceny-1463907.jpg"
+                    ],
+                    "checkIn": "2026-11-20",
+                    "checkOut": "2026-11-22",
+                    "url": "https://hotels24.ua/en/Lviv/Mini-hotel-Tri-Koroni-16472.html",
+                    "shortDescription": "The Three Crowns Hotel is located on the third floor of a building, 4.5 km from the historic center of Lviv. It offers comfortable rooms with everything you need for a relaxing stay: a double bed with bedding, a TV, and free Wi-Fi.…",
+                    "matchReasons": [],
+                    "matchScore": 0,
+                    "currency": "UAH",
+                    "totalPrice": 2200,
+                    "pricePerNight": 1100,
+                    "availableRooms": 3,
+                    "rooms": [
+                      {
+                        "blockId": 64747,
+                        "tariffId": "687e31de2e584c34a26fcc96",
+                        "name": "Стандарт двомісний Double",
+                        "maxOccupancy": 2,
+                        "totalPrice": 2200,
+                        "pricePerNight": 1100,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 64749,
+                        "tariffId": "687e8484df31f11c2c01702c",
+                        "name": "Стандарт двомісний Twin",
+                        "maxOccupancy": 2,
+                        "totalPrice": 2200,
+                        "pricePerNight": 1100,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 64746,
+                        "tariffId": "687e2dff486cd64e6551876e",
+                        "name": "Напівлюкс двомісний",
+                        "maxOccupancy": 2,
+                        "totalPrice": 2398,
+                        "pricePerNight": 1199,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 15599,
+                    "name": "Centrum Apartaments",
+                    "landmarks": [
+                      {
+                        "type": "downtown",
+                        "name": "Площа ринок",
+                        "distanceMeters": 750
+                      },
+                      {
+                        "type": "sight",
+                        "name": "Палац Потоцьких",
+                        "distanceMeters": 15
+                      },
+                      {
+                        "type": "bus",
+                        "name": "Львів",
+                        "distanceMeters": 2700
+                      },
+                      {
+                        "type": "railway",
+                        "name": "Львів",
+                        "distanceMeters": 2700
+                      },
+                      {
+                        "type": "airport",
+                        "name": "Львів",
+                        "distanceMeters": 6500
+                      },
+                      {
+                        "type": "downtown",
+                        "name": "Оперний театр",
+                        "distanceMeters": 750
+                      }
+                    ],
+                    "cityId": 18389,
+                    "city": "Lviv",
+                    "address": "Kopernika, 20",
+                    "description": "Apart-hotel \"Centrum Apartments\" is located in a historical building of the city of Lviv, 15 m from the Potocki Palace, 750 m from the Opera Theater and Rynok Square. Convenient, comfortable and spacious rooms of the \"economy\", \"standard\" and \"family\" classes are available to guests, with everything necessary for living. Shared bathroom, located on the floor. Some standard and family rooms have a private bathroom.Free Wi-Fi is provided throughout the territory. You can order breakfast and coffee at the aparthotel by notifying the administrator. The distance from the apart-hotel \"Center Apartments\" to the railway and bus station is 2.7 km, to the airport 6.5 km.",
+                    "stars": 0,
+                    "rating": 68.6144578313253,
+                    "longitude": 24.026256815344233,
+                    "latitude": 49.838357940239135,
+                    "facilities": [
+                      "Internet",
+                      "Washing house",
+                      "Ironing Service",
+                      "Daily maid service",
+                      "Shared kitchen",
+                      "Fridge",
+                      "Microwave",
+                      "Electric kettle",
+                      "Kitchenware",
+                      "Contactless check-in"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/140/14015/1401537/Apart-otel-Centrum-Apartaments-Lvov-otzyvy-1401537.jpg",
+                      "partner_hotel/facility/140/14015/1401537/Apart-otel-Centrum-Apartaments-Lvov-otzyvy-1401537.jpg"
+                    ],
+                    "checkIn": "2026-11-20",
+                    "checkOut": "2026-11-22",
+                    "url": "https://hotels24.ua/en/Lviv/Mini-hotel-Centrum-Apartaments-15599.html",
+                    "shortDescription": "Apart-hotel \"Centrum Apartments\" is located in a historical building of the city of Lviv, 15 m from the Potocki Palace, 750 m from the Opera Theater and Rynok Square.…",
+                    "matchReasons": [],
+                    "matchScore": 0,
+                    "currency": "UAH",
+                    "totalPrice": 2300,
+                    "pricePerNight": 1150,
+                    "availableRooms": 3,
+                    "rooms": [
+                      {
+                        "blockId": 61024,
+                        "tariffId": "66d549bd60a08e3fba1ae597",
+                        "name": "Стандарт двомісний Нью Йорк",
+                        "maxOccupancy": 2,
+                        "totalPrice": 2300,
+                        "pricePerNight": 1150,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 61025,
+                        "tariffId": "66d54aa517229d6a0e618ead",
+                        "name": "Стандарт двомісний Лондон",
+                        "maxOccupancy": 2,
+                        "totalPrice": 2300,
+                        "pricePerNight": 1150,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 61022,
+                        "tariffId": "66d54940b9704d7b1a2048c1",
+                        "name": "Стандарт двомісний Львів № 3 з санвузлом",
+                        "maxOccupancy": 2,
+                        "totalPrice": 2600,
+                        "pricePerNight": 1300,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 14256,
+                    "name": "Osobnyak",
+                    "landmarks": [
+                      {
+                        "type": "downtown",
+                        "name": "Lviv",
+                        "distanceMeters": 4500
+                      },
+                      {
+                        "type": "bus",
+                        "name": "L'vov",
+                        "distanceMeters": 8600
+                      }
+                    ],
+                    "cityId": 18389,
+                    "city": "Lviv",
+                    "address": "Sadivnicha, 42а",
+                    "description": "Osobnyak Hostel is located in Lviv, 350 meters from Pogulanka Park. It offers 6 rooms. Two common rooms for 6 and 14 people and two economy rooms for two people. Shared rooms have bunk beds. The rooms for two people have double beds. Bathroom with shower is shared. The hostel has a kitchen for self-catering, equipped with everything you need. There is also a pizzeria 350 meters away. A washing machine is at guests' disposal. On the territory of the hostel there is a sauna with a swimming pool, a picnic area, barbecue facilities. There is a sports ground 100 meters from the hostel. Distance from the hostel \"Osobnyak\" to the bus station in Lviv is 8.6 km, to the railway station in Lviv - 7.2 km.",
+                    "stars": 0,
+                    "rating": 61.723716381418086,
+                    "longitude": 24.0777794,
+                    "latitude": 49.8234788,
+                    "facilities": [
+                      "Shops",
+                      "Parking",
+                      "Washing house",
+                      "Guarden",
+                      "Pets are allowed",
+                      "POS terminal",
+                      "Sauna",
+                      "Brazier",
+                      "Barbecue Accessories",
+                      "Swimming pool for sauna",
+                      "Secured parking",
+                      "Street parking",
+                      "Safe at the reception",
+                      "Terrace",
+                      "Place for a picnic",
+                      "Children playground",
+                      "Shared kitchen",
+                      "Fridge",
+                      "Microwave",
+                      "Gas / electric stove",
+                      "Oven",
+                      "Electric kettle",
+                      "Coffee maker",
+                      "Kitchenware",
+                      "Shelter in a hotel"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/132/13264/1326449/Hostel-Osobnyak-Lvov-otzyvy-1326449.jpg",
+                      "partner_hotel/facility/132/13264/1326449/Hostel-Osobnyak-Lvov-otzyvy-1326449.jpg"
+                    ],
+                    "checkIn": "2026-11-20",
+                    "checkOut": "2026-11-22",
+                    "url": "https://hotels24.ua/en/Lviv/Hostel-Osobnyak-14256.html",
+                    "shortDescription": "Osobnyak Hostel is located in Lviv, 350 meters from Pogulanka Park. It offers 6 rooms. Two common rooms for 6 and 14 people and two economy rooms for two people. Shared rooms have bunk beds. The rooms for two people have double beds. Bathroom with shower is shared.…",
+                    "matchReasons": [],
+                    "matchScore": 0,
+                    "currency": "UAH",
+                    "totalPrice": 2400,
+                    "pricePerNight": 1200,
+                    "availableRooms": 1,
+                    "rooms": [
+                      {
+                        "blockId": 67613,
+                        "tariffId": "69e0c96f86cca315573ce730",
+                        "name": "Стандарт двомісний",
+                        "maxOccupancy": 2,
+                        "totalPrice": 2400,
+                        "pricePerNight": 1200,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 15795,
+                    "name": "Friends hostel",
+                    "landmarks": [
+                      {
+                        "type": "downtown",
+                        "name": "Центр міста",
+                        "distanceMeters": 500
+                      },
+                      {
+                        "type": "downtown",
+                        "name": "Rynok Square",
+                        "distanceMeters": 1700
+                      },
+                      {
+                        "type": "bus",
+                        "name": "Автовокзал",
+                        "distanceMeters": 5400
+                      },
+                      {
+                        "type": "railway",
+                        "name": "Залізнична станція",
+                        "distanceMeters": 3300
+                      },
+                      {
+                        "type": "airport",
+                        "name": "Lviv International Airport",
+                        "distanceMeters": 9900
+                      }
+                    ],
+                    "cityId": 18389,
+                    "city": "Lviv",
+                    "address": "Shota Rustaveli, 32",
+                    "description": "\"Friends hostel\" is located in the city center of Lviv. The hostel offers guests a hostel for accommodation of 20 people in a dormitory, and 3 rooms for accommodation from 2 to 4 people. The dormitory room has bunk beds. The rooms for three people have double beds, a sofa, clothes hangers. The bathroom with a shower is shared. The hostel has a kitchen for self-catering, which is equipped with everything you need. Guests are provided with a luggage storage room, as well as bed linen, a hairdryer, a washing machine for use. Also, among other things, you can use free Wi-Fi. The distance from the hostel \"Friendly hostel\" to the bus station is 5.4 km, to the railway station - 3.3 km. Lviv International Airport is located 9.9 km from the hostel.",
+                    "stars": 0,
+                    "rating": 56.371900826446286,
+                    "longitude": 24.0333245,
+                    "latitude": 49.8305825,
+                    "facilities": [
+                      "Internet",
+                      "Room service",
+                      "POS terminal",
+                      "Daily maid service",
+                      "Shared kitchen",
+                      "Fridge",
+                      "Microwave",
+                      "Gas / electric stove",
+                      "Oven",
+                      "Electric kettle",
+                      "Kitchenware"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/141/14157/1415789/Gostinica-Friends-hostel-Lvov-ceny-1415789.jpg",
+                      "partner_hotel/facility/141/14157/1415789/Gostinica-Friends-hostel-Lvov-ceny-1415789.jpg"
+                    ],
+                    "checkIn": "2026-11-20",
+                    "checkOut": "2026-11-22",
+                    "url": "https://hotels24.ua/en/Lviv/Mini-hotel-Friends-hostel-15795.html",
+                    "shortDescription": "\"Friends hostel\" is located in the city center of Lviv. The hostel offers guests a hostel for accommodation of 20 people in a dormitory, and 3 rooms for accommodation from 2 to 4 people. The dormitory room has bunk beds.…",
+                    "matchReasons": [],
+                    "matchScore": 0,
+                    "currency": "UAH",
+                    "totalPrice": 2400,
+                    "pricePerNight": 1200,
+                    "availableRooms": 1,
+                    "rooms": [
+                      {
+                        "blockId": 62219,
+                        "tariffId": "6760519e4d915004fd124b6d",
+                        "name": "Стандарт двомісний Red",
+                        "maxOccupancy": 2,
+                        "totalPrice": 2400,
+                        "pricePerNight": 1200,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              "ms": 660
+            }
+          ]
+        },
+        {
+          "prompt": "Show other hotels with exactly the same dates, guests and budget.",
+          "answer": "I searched Lviv for 2 adults, check-in 20.11.2026 — check-out 22.11.2026, max 3000 UAH per night, no hostels, and excluded the properties I showed before. Here are other matching options on Hotels24:\n\n- [Hotel18](https://hotels24.ua/en/Lviv/Hotel-Hotel18-6907.html) — located ~2.6 km from Rynok Square and ~1.2 km from the central railway station; free Wi‑Fi and a shared kitchen. Price 1,150 UAH/night (2,300 UAH total). Rating ~75.1.  \n- [Snuker](https://hotels24.ua/en/Lviv/Mini-hotel-Snuker-7189.html) — mini-hotel near the “Hill of Glory”, rooms have private bathrooms and free Wi‑Fi; breakfast can be delivered to the room for a fee. Price 1,200 UAH/night (2,400 UAH total). Rating ~68.6.  \n- [Fortuna (mini-hotel)](https://hotels24.ua/en/Lviv/Mini-hotel-Fortuna-6771.html) — central location ~1 km from Rynok Square, rooms with fridge and AC, hotel has a sauna; free Wi‑Fi. Price 1,400 UAH/night (2,800 UAH total). Rating ~75.3.\n\nPrices and availability may change — please recheck availability on the Hotels24 pages above before booking. Would you like more options, hotels closer to the railway station, or to expand the budget?",
+          "ms": 18089,
+          "tools": [
+            {
+              "name": "search_hotels",
+              "args": {
+                "city_id": 18389,
+                "check_in": "2026-11-20",
+                "check_out": "2026-11-22",
+                "guests": 2,
+                "budget_max": 3000,
+                "budget_type": "per_night",
+                "budget_currency": "UAH",
+                "exclude_hostels": true,
+                "exclude_hotel_ids": [
+                  545,
+                  16472,
+                  15599,
+                  14256,
+                  15795
+                ],
+                "language": "en",
+                "limit": 5
+              },
+              "result": {
+                "currency": "UAH",
+                "check_in": "2026-11-20",
+                "check_out": "2026-11-22",
+                "customer_request": null,
+                "budget": {
+                  "max": 3000,
+                  "type": "per_night",
+                  "currency": "UAH"
+                },
+                "result_count": 5,
+                "response_guidance": [
+                  "Answer in the user's language.",
+                  "For each recommended hotel, include its name as a Markdown link using url.",
+                  "Write one or two concise factual sentences using only shortDescription, matchReasons, facilities, rating, location, and live price fields.",
+                  "Explain why it fits the request only when the returned data supports that claim.",
+                  "State that prices and availability may change and should be rechecked before booking."
+                ],
+                "hotels": [
+                  {
+                    "id": 6907,
+                    "name": "Hotel18",
+                    "landmarks": [
+                      {
+                        "type": "downtown",
+                        "name": "ploshad' Rinok",
+                        "distanceMeters": 2600
+                      },
+                      {
+                        "type": "railway",
+                        "name": "Central'niy",
+                        "distanceMeters": 1200
+                      },
+                      {
+                        "type": "airport",
+                        "name": "imeni Danila Galickogo",
+                        "distanceMeters": 5700
+                      },
+                      {
+                        "type": "bus",
+                        "name": "Central'niy",
+                        "distanceMeters": 7900
+                      }
+                    ],
+                    "cityId": 18389,
+                    "city": "Lviv",
+                    "address": "Storozhenka , 18",
+                    "description": "Hotel \"Hotel18\" is located near the center of Lviv, 2.6 km from Rynok Square. 18 rooms are equipped for the accommodation of guests. There are rooms with amenities in the room and rooms with amenities on the floor. Free Wi-Fi is available throughout the hostel. Guests can eat in the common equipped kitchen. In the kitchen, the residents have at their disposal a microwave oven, a hob, a refrigerator, an electric kettle, a coffee machine, a set of dishes and a washing machine. A hair dryer and an iron can be used at the reception upon request. The distance to the nearest store is 10 m, to the cafe - 15 m. Hotel \"Hotel18\" is located 1.2 km from the central railway station, 5.7 km from the airport, 7.9 km from the bus station.",
+                    "stars": 0,
+                    "rating": 75.09661835748793,
+                    "longitude": 24.001074963194572,
+                    "latitude": 49.841756246438074,
+                    "facilities": [
+                      "Internet",
+                      "Street parking",
+                      "Shared kitchen",
+                      "Fridge",
+                      "Microwave",
+                      "Gas / electric stove",
+                      "Electric kettle",
+                      "Coffee maker",
+                      "Kitchenware",
+                      "Accommodation with animals (up to 3 kg)"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/141/14149/1414966/Otel-Hotel18-Lvov-otzyvy-1414966.jpg",
+                      "partner_hotel/facility/141/14149/1414966/Otel-Hotel18-Lvov-otzyvy-1414966.jpg"
+                    ],
+                    "checkIn": "2026-11-20",
+                    "checkOut": "2026-11-22",
+                    "url": "https://hotels24.ua/en/Lviv/Hotel-Hotel18-6907.html",
+                    "shortDescription": "Hotel \"Hotel18\" is located near the center of Lviv, 2.6 km from Rynok Square. 18 rooms are equipped for the accommodation of guests. There are rooms with amenities in the room and rooms with amenities on the floor. Free Wi-Fi is available throughout the hostel.…",
+                    "matchReasons": [],
+                    "matchScore": 0,
+                    "currency": "UAH",
+                    "totalPrice": 2300,
+                    "pricePerNight": 1150,
+                    "availableRooms": 8,
+                    "rooms": [
+                      {
+                        "blockId": 27839,
+                        "tariffId": "57c31f50a47819a15c8b4587",
+                        "name": "Економ тримісний",
+                        "maxOccupancy": 3,
+                        "totalPrice": 2300,
+                        "pricePerNight": 1150,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 27837,
+                        "tariffId": "57c31f50a47819a15c8b4585",
+                        "name": "Економ двомісний Twin",
+                        "maxOccupancy": 2,
+                        "totalPrice": 2300,
+                        "pricePerNight": 1150,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 27836,
+                        "tariffId": "57c314a5a47819994e8b458a",
+                        "name": "Стандарт двомісний Twin.",
+                        "maxOccupancy": 2,
+                        "totalPrice": 2700,
+                        "pricePerNight": 1350,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 7189,
+                    "name": "Snuker",
+                    "landmarks": [
+                      {
+                        "type": "bus",
+                        "name": "№5",
+                        "distanceMeters": 4000
+                      },
+                      {
+                        "type": "bus",
+                        "name": "№2",
+                        "distanceMeters": 6000
+                      },
+                      {
+                        "type": "railway",
+                        "name": "Central'niy",
+                        "distanceMeters": 6700
+                      },
+                      {
+                        "type": "downtown",
+                        "name": "ploshad' Rinok",
+                        "distanceMeters": 3700
+                      }
+                    ],
+                    "cityId": 18389,
+                    "city": "Lviv",
+                    "address": "Pasichna, 43 square 3 этаж",
+                    "description": "Mini-hotel \"Snooker\" is located near the center of Lviv, near the \"Hill of Glory\" memorial. 11 rooms of different categories are equipped for the accommodation of guests. Each room has a flat-screen cable TV, a private bathroom with a shower, hair dryers, and a set of toiletries. Free Wi-Fi internet access is available throughout the hotel. Breakfast can be delivered to the room for a separate fee. Nearby there are 24-hour shops, a mini market, a bank branch and a post office. Thanks to the convenient transport interchange, you can quickly reach the historic center of the city from the mini-hotel. The distance from the Snooker Hotel to Rynok Square is 3.7 km, to the railway station - 6.9 km, to bus station No. 5 - 4 km.",
+                    "stars": 0,
+                    "rating": 68.55721393034825,
+                    "longitude": 24.069947,
+                    "latitude": 49.830156,
+                    "facilities": [
+                      "Bar",
+                      "Internet",
+                      "Parking",
+                      "Washing house",
+                      "Room service",
+                      "Billiards",
+                      "Food and beverage delivery to the room",
+                      "Breakfast in the room",
+                      "Ironing Service",
+                      "Shelter in a hotel"
+                    ],
+                    "photos": [
+                      "partner_hotel/hotel_main/103/10357/1035725/Gostinica-Snuker-Lvov-ceny-1035725.jpg",
+                      "partner_hotel/hotel_main/103/10357/1035725/Gostinica-Snuker-Lvov-ceny-1035725.jpg"
+                    ],
+                    "checkIn": "2026-11-20",
+                    "checkOut": "2026-11-22",
+                    "url": "https://hotels24.ua/en/Lviv/Mini-hotel-Snuker-7189.html",
+                    "shortDescription": "Mini-hotel \"Snooker\" is located near the center of Lviv, near the \"Hill of Glory\" memorial. 11 rooms of different categories are equipped for the accommodation of guests. Each room has a flat-screen cable TV, a private bathroom with a shower, hair dryers, and a set of toiletries.…",
+                    "matchReasons": [],
+                    "matchScore": 0,
+                    "currency": "UAH",
+                    "totalPrice": 2400,
+                    "pricePerNight": 1200,
+                    "availableRooms": 4,
+                    "rooms": [
+                      {
+                        "blockId": 31821,
+                        "tariffId": "5957a058a4781908318b4586",
+                        "name": "Комфорт двомісний",
+                        "maxOccupancy": 2,
+                        "totalPrice": 2400,
+                        "pricePerNight": 1200,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 30015,
+                        "tariffId": "58b58a79a478192e0d8b45ef",
+                        "name": "Стандарт двомісний twin з кондиціонером",
+                        "maxOccupancy": 2,
+                        "totalPrice": 2400,
+                        "pricePerNight": 1200,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 30014,
+                        "tariffId": "58b58a79a478192e0d8b45ee",
+                        "name": "Покращений двомісний з кондиціонером",
+                        "maxOccupancy": 2,
+                        "totalPrice": 2400,
+                        "pricePerNight": 1200,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 17152,
+                    "name": "Fortuna",
+                    "landmarks": [
+                      {
+                        "type": "railway",
+                        "name": "Lviv",
+                        "distanceMeters": 1300
+                      },
+                      {
+                        "type": "bus",
+                        "name": "Lviv",
+                        "distanceMeters": 5900
+                      },
+                      {
+                        "type": "downtown",
+                        "name": "downtown",
+                        "distanceMeters": 1600
+                      }
+                    ],
+                    "cityId": 18389,
+                    "city": "Lviv",
+                    "address": "Kotlyarevsky, 26",
+                    "description": "Hostel \"Fortuna\" is located in one of the most comfortable and prestigious areas of Lviv. Convenient location and good transport connections allow you to easily reach any part of the city. The hostel can comfortably accommodate up to 46 guests. Guests can enjoy two spacious 18-bed rooms, one 10-bed room and a cozy double room on the second floor. All rooms have high ceilings, which creates a feeling of space and comfort. Each room is equipped with bunk beds, and some rooms have a double bed, a fireplace and a balcony. Each floor has a shared bathroom with amenities, and towels are provided. There is free Wi-Fi on the territory. On the ground floor there is a large kitchen with all the necessary kitchen utensils. For a fee, you can use the services of a sauna and laundry. The distance to the Fortuna hostel from the railway station is 2.7 km, from the bus station is 5.9 km.",
+                    "stars": 0,
+                    "rating": 75,
+                    "longitude": 24.01192471289748,
+                    "latitude": 49.83149726987413,
+                    "facilities": [
+                      "Internet",
+                      "Shops",
+                      "Washing house",
+                      "POS terminal",
+                      "Sauna",
+                      "Safe at the reception",
+                      "Daily maid service",
+                      "Shared kitchen",
+                      "Fridge",
+                      "Microwave",
+                      "Gas / electric stove",
+                      "Oven",
+                      "Electric kettle",
+                      "Kitchenware",
+                      "Contactless check-in"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/151/15129/1512948/Hostel-Fortuna-Lvov-zabronirovat-1512948.jpg",
+                      "partner_hotel/facility/151/15129/1512948/Hostel-Fortuna-Lvov-zabronirovat-1512948.jpg"
+                    ],
+                    "checkIn": "2026-11-20",
+                    "checkOut": "2026-11-22",
+                    "url": "https://hotels24.ua/en/Lviv/Hostel-Fortuna-17152.html",
+                    "shortDescription": "Hostel \"Fortuna\" is located in one of the most comfortable and prestigious areas of Lviv. Convenient location and good transport connections allow you to easily reach any part of the city. The hostel can comfortably accommodate up to 46 guests.…",
+                    "matchReasons": [],
+                    "matchScore": 0,
+                    "currency": "UAH",
+                    "totalPrice": 2600,
+                    "pricePerNight": 1300,
+                    "availableRooms": 1,
+                    "rooms": [
+                      {
+                        "blockId": 68300,
+                        "tariffId": "6a297ed48dfe5a7784428a4f",
+                        "name": "Стандарт двомісний +1",
+                        "maxOccupancy": 2,
+                        "totalPrice": 2600,
+                        "pricePerNight": 1300,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 15894,
+                    "name": "Leosphere",
+                    "landmarks": [
+                      {
+                        "type": "downtown",
+                        "name": "Ploshad' rinok",
+                        "distanceMeters": 600
+                      },
+                      {
+                        "type": "bus",
+                        "name": "bus",
+                        "distanceMeters": 6000
+                      }
+                    ],
+                    "cityId": 18389,
+                    "city": "Lviv",
+                    "address": "Bathhouse, 8",
+                    "description": "Hostel \"Leosfera\" is located in the city center of Lviv, 220 m from the Opera Theater. The rooms are equipped with everything necessary for a comfortable stay: comfortable beds with bed linen, towels, personal sockets, lighting, access to the Wi-Fi network. Some rooms are equipped with a TV. The shared bathroom is equipped with a shower, washbasin, toilet. Guests have access to free Wi-Fi, a kitchen for heating food, a relaxation area, storage rooms and a 24-hour reception. There is street parking on the hostel's territory. Within walking distance: shops, a supermarket, cafes, coffee shops, restaurants, a public transport stop. The distance from the hostel \"Leosfera\" to the railway station is 2.7 km, to the bus station - 3.1 km, to Rynok Square - 600 m.",
+                    "stars": 0,
+                    "rating": 58.82352941176471,
+                    "longitude": 24.0256489,
+                    "latitude": 49.8457165,
+                    "facilities": [
+                      "Internet",
+                      "POS terminal",
+                      "Street parking",
+                      "Shared kitchen",
+                      "Fridge",
+                      "Microwave",
+                      "Gas / electric stove",
+                      "Electric kettle",
+                      "Kitchenware",
+                      "Shelter in a hotel",
+                      "Charging for electric cars"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/146/14633/1463336/Otel-Hostel-Lvov-ceny-1463336.jpg",
+                      "partner_hotel/facility/146/14633/1463336/Otel-Hostel-Lvov-ceny-1463336.jpg"
+                    ],
+                    "checkIn": "2026-11-20",
+                    "checkOut": "2026-11-22",
+                    "url": "https://hotels24.ua/en/Lviv/Hostel-Leosphere-15894.html",
+                    "shortDescription": "Hostel \"Leosfera\" is located in the city center of Lviv, 220 m from the Opera Theater. The rooms are equipped with everything necessary for a comfortable stay: comfortable beds with bed linen, towels, personal sockets, lighting, access to the Wi-Fi network.…",
+                    "matchReasons": [],
+                    "matchScore": 0,
+                    "currency": "UAH",
+                    "totalPrice": 2600,
+                    "pricePerNight": 1300,
+                    "availableRooms": 2,
+                    "rooms": [
+                      {
+                        "blockId": 64682,
+                        "tariffId": "6878c8aa9cbdfb03a555f197",
+                        "name": "Економ двомісний",
+                        "maxOccupancy": 2,
+                        "totalPrice": 2600,
+                        "pricePerNight": 1300,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 64683,
+                        "tariffId": "6878c8deb58cc92c0169613a",
+                        "name": "Сімейний 4-місний",
+                        "maxOccupancy": 4,
+                        "totalPrice": 2800,
+                        "pricePerNight": 1400,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 6771,
+                    "name": "Fortuna",
+                    "landmarks": [
+                      {
+                        "type": "railway",
+                        "name": "Central'niy",
+                        "distanceMeters": 3100
+                      },
+                      {
+                        "type": "bus",
+                        "name": "Central'niy",
+                        "distanceMeters": 6300
+                      },
+                      {
+                        "type": "downtown",
+                        "name": "ploshad' Rinok",
+                        "distanceMeters": 1000
+                      }
+                    ],
+                    "cityId": 18389,
+                    "city": "Lviv",
+                    "address": "Kniazia Sviatoslava Sq, 11",
+                    "description": "Mini hotel \"Fortuna\" is located in the central part of Lviv, 1 km from Rynok Square. The hotel room fund consists of 8 rooms of different categories. It offers living rooms of the category \"standard\", \"junior suite\" and \"family\". Each room is equipped with a refrigerator, air conditioning, modern flat-screen TV. Throughout the hotel free Wi-Fi access. The hotel has a bath complex. The sauna consists of a wood-fired steam room, a Roman steam room, a warm jacuzzi and a contrast pool. You can order a professional bath attendant. At the reception it is possible to order breakfast. Nearby there are many cafes, restaurants, shops. Free parking is provided for the car. Mini hotel \"Fortuna\" is located at a distance of 3.1 km. from the central railway station and 6.3 km. from the bus station.",
+                    "stars": 0,
+                    "rating": 75.33333333333333,
+                    "longitude": 24.0095473,
+                    "latitude": 49.8428761,
+                    "facilities": [
+                      "Bar",
+                      "Internet",
+                      "Recovery",
+                      "Parking",
+                      "Room service",
+                      "POS terminal",
+                      "Bathhouse",
+                      "Sauna",
+                      "Breakfast in the room",
+                      "Swimming pool for sauna",
+                      "Secured parking",
+                      "Safe at the reception",
+                      "Daily maid service",
+                      "Turkish bath",
+                      "Electric generator",
+                      "Charging for electric cars"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/119/11984/1198418/Mini-otel-Fortuna-Lvov-foto-1198418.jpg",
+                      "partner_hotel/facility/119/11984/1198418/Mini-otel-Fortuna-Lvov-foto-1198418.jpg"
+                    ],
+                    "checkIn": "2026-11-20",
+                    "checkOut": "2026-11-22",
+                    "url": "https://hotels24.ua/en/Lviv/Mini-hotel-Fortuna-6771.html",
+                    "shortDescription": "Mini hotel \"Fortuna\" is located in the central part of Lviv, 1 km from Rynok Square. The hotel room fund consists of 8 rooms of different categories. It offers living rooms of the category \"standard\", \"junior suite\" and \"family\".…",
+                    "matchReasons": [],
+                    "matchScore": 0,
+                    "currency": "UAH",
+                    "totalPrice": 2800,
+                    "pricePerNight": 1400,
+                    "availableRooms": 2,
+                    "rooms": [
+                      {
+                        "blockId": 27141,
+                        "tariffId": "576a62fca47819e9188b45c0",
+                        "name": "Покращений двомісний",
+                        "maxOccupancy": 2,
+                        "totalPrice": 2800,
+                        "pricePerNight": 1400,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 27140,
+                        "tariffId": "576a62fca47819e9188b45bf",
+                        "name": "Напівлюкс двомісний",
+                        "maxOccupancy": 2,
+                        "totalPrice": 3000,
+                        "pricePerNight": 1500,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              "ms": 656
+            }
+          ]
+        },
+        {
+          "prompt": "Change the city to Odesa, keep all other conditions.",
+          "answer": "Я знайшов варіанти в Одесі для 2 дорослих, заїзд 20.11.2026 — виїзд 22.11.2026, до 3000 UAH/ніч, без хостелів. Ось до 5 результатів на Hotels24:\n\n- [Blaz](https://hotels24.ua/en/Odesa/Hotel-Blaz-4181.html) — готель біля великої транспортної розв’язки, близько 2 км до залізничного вокзалу; є кондиціонер, безкоштовний Wi‑Fi та платна парковка. Ціна 650 UAH/ніч (1,300 UAH за 2 ночі). Рейтинг ~57.8.  \n- [Donald hotel](https://hotels24.ua/en/Odesa/Hotel--10480.html) — у самому центрі на вул. Дерибасівській, ~150 м від Оперного театру; 24‑годинна рецепція і безкоштовний Wi‑Fi. Ціна 650 UAH/ніч (1,300 UAH за 2 ночі). Рейтинг ~76.5.  \n- [Wellotel](https://hotels24.ua/en/Odesa/Hotel-Wellotel-2786.html) — у центрі, за 5 хв пішки від Дерибасівської; кімнати з кондиціонером, міні‑холодильником і безкоштовним Wi‑Fi. Ціна 659 UAH/ніч (1,318 UAH за 2 ночі). Рейтинг 76.0.  \n- [Men'shikov](https://hotels24.ua/en/Odesa/Apartment-hotel-Menshikov-5444.html) — у історичному центрі, близько до основних музеїв; є Smart TV, Wi‑Fi і міні‑холодильник. Ціна 699 UAH/ніч (1,398 UAH за 2 ночі). Рейтинг ~71.9.  \n- [Potemkinn](https://hotels24.ua/en/Odesa/Hotel-Potemkinn-7352.html) — історичний центр, ~700 м від Оперного та неподалік Потьомкінських сходів; кімнати з кондиціонером і міні‑холодильником. Ціна 700 UAH/ніч (1,400 UAH за 2 ночі). Рейтинг ~82.4.\n\nЦіни й наявність можуть змінитися — будь ласка, перевірте доступність на сторінках Hotels24 перед бронюванням. Бажаєте ще варіантів, готелі ближче до пляжу або змінити бюджет?",
+          "ms": 20482,
+          "tools": [
+            {
+              "name": "resolve_destination",
+              "args": {
+                "query": "Odesa",
+                "language": "en"
+              },
+              "result": {
+                "destinations": [
+                  {
+                    "id": 18058,
+                    "type": "city",
+                    "name": "Odesa, Odesa region, Ukraine",
+                    "cityId": 18058
+                  }
+                ]
+              },
+              "ms": 24
+            },
+            {
+              "name": "search_hotels",
+              "args": {
+                "city_id": 18058,
+                "check_in": "2026-11-20",
+                "check_out": "2026-11-22",
+                "guests": 2,
+                "budget_max": 3000,
+                "budget_type": "per_night",
+                "budget_currency": "UAH",
+                "exclude_hostels": true,
+                "language": "en",
+                "limit": 5
+              },
+              "result": {
+                "currency": "UAH",
+                "check_in": "2026-11-20",
+                "check_out": "2026-11-22",
+                "customer_request": null,
+                "budget": {
+                  "max": 3000,
+                  "type": "per_night",
+                  "currency": "UAH"
+                },
+                "result_count": 5,
+                "response_guidance": [
+                  "Answer in the user's language.",
+                  "For each recommended hotel, include its name as a Markdown link using url.",
+                  "Write one or two concise factual sentences using only shortDescription, matchReasons, facilities, rating, location, and live price fields.",
+                  "Explain why it fits the request only when the returned data supports that claim.",
+                  "State that prices and availability may change and should be rechecked before booking."
+                ],
+                "hotels": [
+                  {
+                    "id": 4181,
+                    "name": "Blaz",
+                    "landmarks": [
+                      {
+                        "type": "bus",
+                        "name": "Downtown",
+                        "distanceMeters": 4000
+                      },
+                      {
+                        "type": "railway",
+                        "name": "Jeleznodorojniy",
+                        "distanceMeters": 1900
+                      },
+                      {
+                        "type": "airport",
+                        "name": "Mejdunarodniy",
+                        "distanceMeters": 6000
+                      },
+                      {
+                        "type": "beach",
+                        "name": "Arkadiya",
+                        "distanceMeters": 6300
+                      },
+                      {
+                        "type": "downtown",
+                        "name": "ploshad' Grecheskaya",
+                        "distanceMeters": 8200
+                      }
+                    ],
+                    "cityId": 18058,
+                    "city": "Odesa",
+                    "address": "Transportna, 5",
+                    "description": "Hotel \"Blaz\" is located 10 minutes' drive from the city center, at a major road junction of the city. The hotel's room base consists of 30 rooms of different categories, each of which is equipped with air conditioning and modern furniture. The hotel has a cafe and a hairdresser, a car service station, and a dry cleaner next to the hotel. 24-hour water supply and free Wi-Fi access are available. The possibility and conditions of accommodation with animals must be specified with each booking. Parking is paid, the cost should be specified when booking. Blaz Hotel is located 1.5 km from the bus station, 2 km from the railway station, and 5.2 km from the airport.",
+                    "stars": 0,
+                    "rating": 57.82747603833865,
+                    "longitude": 30.730066719118668,
+                    "latitude": 46.45319609331147,
+                    "facilities": [
+                      "Internet",
+                      "Hairdressing salon / Beauty salon",
+                      "Parking",
+                      "Room service",
+                      "Pets are allowed",
+                      "POS terminal",
+                      "Coffee house on site",
+                      "Secured parking",
+                      "Electric generator",
+                      "Shelter in a hotel"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/114/11485/1148522/Otel-Blaz-Odessa-snjat-1148522.jpg",
+                      "partner_hotel/facility/114/11485/1148522/Otel-Blaz-Odessa-snjat-1148522.jpg"
+                    ],
+                    "checkIn": "2026-11-20",
+                    "checkOut": "2026-11-22",
+                    "url": "https://hotels24.ua/en/Odesa/Hotel-Blaz-4181.html",
+                    "shortDescription": "Hotel \"Blaz\" is located 10 minutes' drive from the city center, at a major road junction of the city. The hotel's room base consists of 30 rooms of different categories, each of which is equipped with air conditioning and modern furniture.…",
+                    "matchReasons": [],
+                    "matchScore": 0,
+                    "currency": "UAH",
+                    "totalPrice": 1300,
+                    "pricePerNight": 650,
+                    "availableRooms": 8,
+                    "rooms": [
+                      {
+                        "blockId": 16015,
+                        "tariffId": "53d5aa35a4781937098ba7b4",
+                        "name": "Економ двомісний",
+                        "maxOccupancy": 2,
+                        "totalPrice": 1300,
+                        "pricePerNight": 650,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 16014,
+                        "tariffId": "53d5aa34a4781937098ba7b3",
+                        "name": "Стандарт двомісний",
+                        "maxOccupancy": 2,
+                        "totalPrice": 1600,
+                        "pricePerNight": 800,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 36241,
+                        "tariffId": "5b17c4f4a47819b0288b45bb",
+                        "name": "Стандарт двомісний із двоспальним ліжком",
+                        "maxOccupancy": 2,
+                        "totalPrice": 1700,
+                        "pricePerNight": 850,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 10480,
+                    "name": "Donald hotel",
+                    "landmarks": [
+                      {
+                        "type": "railway",
+                        "name": "Jeleznodorojniy",
+                        "distanceMeters": 2400
+                      },
+                      {
+                        "type": "bus",
+                        "name": "Central'niy",
+                        "distanceMeters": 2900
+                      },
+                      {
+                        "type": "airport",
+                        "name": "Mejdunarodniy",
+                        "distanceMeters": 8300
+                      }
+                    ],
+                    "cityId": 18058,
+                    "city": "Odesa",
+                    "address": "St. Deribasivska , 14",
+                    "description": "Hotel Donald is located in the very center of Odessa on Deribasivska Street, 150 meters from the National Academic Theater of Opera and Ballet and the Palais-Royal Park. 500 meters from Odesa City Garden, Dumska Square, Primorsky Boulevard, the Museum of Western and Eastern Art and the Odessa Archaeological Museum. The most popular architectural monuments are located near the Donald Hotel, such as the Potemkin Stairs, the monument Duke de Richelieu, Transfiguration Cathedral, Odesa Philharmonic. Many popular restaurants and shopping centers are located near the Donald Hotel. The nearest Langeron beach and promenade are 2.2 kilometers away. There is a 24-hour front desk, shuttle service, luggage storage and free Wi-Fi in the entire area. The rooms have a wardrobe and a luggage rack. Each room at Donald Hotel has a desk, a 40-inch TV with faucet, carpeting, a large mirror, bedside sconces with additional spot lighting, and a private bathroom with a lighted make-up mirror. The distance from the \"Donald hotel\" to the central railway station is 2.4 km, to the bus station 2.9 km, to the airport 8.3 km.",
+                    "stars": 0,
+                    "rating": 76.52747252747253,
+                    "longitude": 30.7394821,
+                    "latitude": 46.4842245,
+                    "facilities": [
+                      "Internet",
+                      "Shops",
+                      "Washing house",
+                      "Restaurant",
+                      "Room service",
+                      "POS terminal",
+                      "Paid transfer",
+                      "Concierge Service",
+                      "Ironing Service",
+                      "Daily maid service",
+                      "Staff speaks English",
+                      "Microwave",
+                      "Electric kettle",
+                      "Shelter in a hotel"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/138/13820/1382004/Otel-Donald-Odessa-zabronirovat-1382004.jpg",
+                      "partner_hotel/facility/138/13820/1382004/Otel-Donald-Odessa-zabronirovat-1382004.jpg"
+                    ],
+                    "checkIn": "2026-11-20",
+                    "checkOut": "2026-11-22",
+                    "url": "https://hotels24.ua/en/Odesa/Hotel--10480.html",
+                    "shortDescription": "Hotel Donald is located in the very center of Odessa on Deribasivska Street, 150 meters from the National Academic Theater of Opera and Ballet and the Palais-Royal Park.…",
+                    "matchReasons": [],
+                    "matchScore": 0,
+                    "currency": "UAH",
+                    "totalPrice": 1300,
+                    "pricePerNight": 650,
+                    "availableRooms": 2,
+                    "rooms": [
+                      {
+                        "blockId": 56833,
+                        "tariffId": "645c84c6cc3e503a907d1b72",
+                        "name": "Стандарт двомісний TWIN.",
+                        "maxOccupancy": 2,
+                        "totalPrice": 1300,
+                        "pricePerNight": 650,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 39864,
+                        "tariffId": "5c6d9a0aa478194e5f8b4683",
+                        "name": "Суперіор двомісний",
+                        "maxOccupancy": 2,
+                        "totalPrice": 1400,
+                        "pricePerNight": 700,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 2786,
+                    "name": "Wellotel",
+                    "landmarks": [
+                      {
+                        "type": "downtown",
+                        "name": "ul. Deribasovskaya",
+                        "distanceMeters": 1700
+                      },
+                      {
+                        "type": "railway",
+                        "name": "Odessa",
+                        "distanceMeters": 2500
+                      },
+                      {
+                        "type": "bus",
+                        "name": "Privoz",
+                        "distanceMeters": 1300
+                      },
+                      {
+                        "type": "airport",
+                        "name": "Mejdunarodniy",
+                        "distanceMeters": 8500
+                      },
+                      {
+                        "type": "beach",
+                        "name": "Lanjeron",
+                        "distanceMeters": 3200
+                      }
+                    ],
+                    "cityId": 18058,
+                    "city": "Odesa",
+                    "address": "Tyraspolska , 1",
+                    "description": "Hotel \"Wellotel\" is located in the city center, a five minute walk from the famous Deribasovskaya street. Guests are provided with 12 comfortable rooms, each with a telephone, satellite TV, mini fridge, air conditioning, and private bathroom. The autonomous system of heat and water supply works. The facade of the hotel overlooks Tiraspolskaya Street. Guests can enjoy free Wi-Fi throughout the hotel. For guests of the hotel \"Wellotel\" you can order transfer services, ticket booking and many other additional services. The distance from the hotel to the airport - 7.7 km, to the railway station - 2 km.",
+                    "stars": 3,
+                    "rating": 76,
+                    "longitude": 30.7314857,
+                    "latitude": 46.4794182,
+                    "facilities": [
+                      "Internet",
+                      "Washing house",
+                      "POS terminal",
+                      "Breakfast in the room",
+                      "Fridge",
+                      "Microwave",
+                      "Electric kettle",
+                      "Coffee maker",
+                      "Kitchenware",
+                      "Accommodation with animals (up to 3 kg)",
+                      "Contactless check-in"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/114/11457/1145715/Otel-Wellotel-Odessa-ceny-1145715.jpg",
+                      "partner_hotel/facility/114/11457/1145715/Otel-Wellotel-Odessa-ceny-1145715.jpg"
+                    ],
+                    "checkIn": "2026-11-20",
+                    "checkOut": "2026-11-22",
+                    "url": "https://hotels24.ua/en/Odesa/Hotel-Wellotel-2786.html",
+                    "shortDescription": "Hotel \"Wellotel\" is located in the city center, a five minute walk from the famous Deribasovskaya street. Guests are provided with 12 comfortable rooms, each with a telephone, satellite TV, mini fridge, air conditioning, and private bathroom.…",
+                    "matchReasons": [],
+                    "matchScore": 0,
+                    "currency": "UAH",
+                    "totalPrice": 1318,
+                    "pricePerNight": 659,
+                    "availableRooms": 3,
+                    "rooms": [
+                      {
+                        "blockId": 10688,
+                        "tariffId": "53d5a9d8a4781937098b973d",
+                        "name": "Стандарт двомісний",
+                        "maxOccupancy": 2,
+                        "totalPrice": 1318,
+                        "pricePerNight": 659,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 10151,
+                        "tariffId": "53d5a9d8a4781937098b973a",
+                        "name": "Стандарт двомісний з балконом",
+                        "maxOccupancy": 2,
+                        "totalPrice": 1598,
+                        "pricePerNight": 799,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 55850,
+                        "tariffId": "63c14ba91fc2ad68cf3f466b",
+                        "name": "Стандарт двомісний (2+1)",
+                        "maxOccupancy": 3,
+                        "totalPrice": 1798,
+                        "pricePerNight": 899,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 5444,
+                    "name": "Men'shikov",
+                    "landmarks": [
+                      {
+                        "type": "downtown",
+                        "name": "Downtown",
+                        "distanceMeters": 300
+                      },
+                      {
+                        "type": "railway",
+                        "name": "Central'niy",
+                        "distanceMeters": 1700
+                      },
+                      {
+                        "type": "bus",
+                        "name": "bus",
+                        "distanceMeters": 1500
+                      }
+                    ],
+                    "cityId": 18058,
+                    "city": "Odesa",
+                    "address": "Katerynynska Str, 30",
+                    "description": "The Menshikov Hotel is located in the historical center of Odessa, 2.6 km from Lanzheron Beach. It offers 7 comfortable rooms, the interior of which is made in a modern style. Room size ranges from 15-18 sq.m in Standards and up to 35 sq.m in Suites. The rooms have everything you need for a comfortable stay, namely Smart TV, high-speed wi-fi internet, mini fridge, air conditioning and furniture. The bathroom has a shower, slippers, towels and a hairdryer are additionally provided. The closest attractions are Odessa Museum of Numismatics (0.2 km), Odessa Philharmonic Society (0.4 km) and Odessa Museum of Western and Oriental Art (0.5 km). The distance from the Menshikov Hotel to the railway station is 1.7 km, to the bus station - 1.5 km.",
+                    "stars": 0,
+                    "rating": 71.86301369863014,
+                    "longitude": 30.738079897052305,
+                    "latitude": 46.480410233486225,
+                    "facilities": [
+                      "Internet",
+                      "Washing house",
+                      "POS terminal",
+                      "Car rental",
+                      "Coffee maker",
+                      "Accommodation with animals (up to 3 kg)",
+                      "Contactless check-in"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/137/13729/1372923/Gostinica-Menshikov-Odessa-otzyvy-1372923.jpg",
+                      "partner_hotel/facility/137/13729/1372923/Gostinica-Menshikov-Odessa-otzyvy-1372923.jpg"
+                    ],
+                    "checkIn": "2026-11-20",
+                    "checkOut": "2026-11-22",
+                    "url": "https://hotels24.ua/en/Odesa/Apartment-hotel-Menshikov-5444.html",
+                    "shortDescription": "The Menshikov Hotel is located in the historical center of Odessa, 2.6 km from Lanzheron Beach. It offers 7 comfortable rooms, the interior of which is made in a modern style. Room size ranges from 15-18 sq.m in Standards and up to 35 sq.m in Suites.…",
+                    "matchReasons": [],
+                    "matchScore": 0,
+                    "currency": "UAH",
+                    "totalPrice": 1398,
+                    "pricePerNight": 699,
+                    "availableRooms": 4,
+                    "rooms": [
+                      {
+                        "blockId": 30536,
+                        "tariffId": "58ece2d4a478196b0c8b4600",
+                        "name": "Економ двомісний",
+                        "maxOccupancy": 2,
+                        "totalPrice": 1398,
+                        "pricePerNight": 699,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 21635,
+                        "tariffId": "556834dea4781945408b456b",
+                        "name": "Стандарт двомісний",
+                        "maxOccupancy": 2,
+                        "totalPrice": 1598,
+                        "pricePerNight": 799,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 56126,
+                        "tariffId": "63f5ddc39de7db61581099cd",
+                        "name": "Стандарт тримісний 2+1",
+                        "maxOccupancy": 3,
+                        "totalPrice": 1998,
+                        "pricePerNight": 999,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 7352,
+                    "name": "Potemkinn",
+                    "landmarks": [
+                      {
+                        "type": "downtown",
+                        "name": "Odesa",
+                        "distanceMeters": 1300
+                      },
+                      {
+                        "type": "railway",
+                        "name": "Central'niy",
+                        "distanceMeters": 2700
+                      },
+                      {
+                        "type": "beach",
+                        "name": "Lanjeron",
+                        "distanceMeters": 3200
+                      }
+                    ],
+                    "cityId": 18058,
+                    "city": "Odesa",
+                    "address": "Mayakovs'koho Ln, 5",
+                    "description": "Hotel \"Potemkinn\" is located in the historical center of Odessa, 700 m from the National Academic Theater of Opera and Ballet. Comfortable rooms of various categories are equipped with comfortable beds, air conditioners, mini-fridges, and private bathrooms. Wi-Fi access and cable TV are available. For an additional fee, guests of the \"Potemkinn\" hotel can order breakfast. Laundry and ironing services are available for an additional fee. The Potemkin Stairs are located 750 m from the hotel, and the picturesque Gorsad on Deribasivska Street is 500 m away. The Central Railway Station is 2.7 km from the hotel.",
+                    "stars": 0,
+                    "rating": 82.41935483870968,
+                    "longitude": 30.734628048935,
+                    "latitude": 46.486646710922,
+                    "facilities": [
+                      "Internet",
+                      "Parking",
+                      "Washing house",
+                      "Room service",
+                      "POS terminal",
+                      "Street parking",
+                      "Ironing Service",
+                      "Daily maid service",
+                      "Staff speaks English",
+                      "Electric generator",
+                      "Shelter in a hotel"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/104/10450/1045029/Otel-Potemkinn-Odessa-snjat-1045029.jpg",
+                      "partner_hotel/facility/104/10450/1045029/Otel-Potemkinn-Odessa-snjat-1045029.jpg"
+                    ],
+                    "checkIn": "2026-11-20",
+                    "checkOut": "2026-11-22",
+                    "url": "https://hotels24.ua/en/Odesa/Hotel-Potemkinn-7352.html",
+                    "shortDescription": "Hotel \"Potemkinn\" is located in the historical center of Odessa, 700 m from the National Academic Theater of Opera and Ballet. Comfortable rooms of various categories are equipped with comfortable beds, air conditioners, mini-fridges, and private bathrooms.…",
+                    "matchReasons": [],
+                    "matchScore": 0,
+                    "currency": "UAH",
+                    "totalPrice": 1400,
+                    "pricePerNight": 700,
+                    "availableRooms": 4,
+                    "rooms": [
+                      {
+                        "blockId": 31188,
+                        "tariffId": "5922b6d7a47819716f8b45bb",
+                        "name": "Стандарт двомісний",
+                        "maxOccupancy": 2,
+                        "totalPrice": 1400,
+                        "pricePerNight": 700,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 34338,
+                        "tariffId": "5a8ed11aa47819b4038b45b2",
+                        "name": "Покращений двомісний",
+                        "maxOccupancy": 2,
+                        "totalPrice": 1600,
+                        "pricePerNight": 800,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 31189,
+                        "tariffId": "5922bb03a47819b36c8b45ee",
+                        "name": "Делюкс двомісний",
+                        "maxOccupancy": 2,
+                        "totalPrice": 1800,
+                        "pricePerNight": 900,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              "ms": 571
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "year_rollover",
+      "turns": [
+        {
+          "prompt": "Київ, 31 грудня — 2 січня, 2 дорослих, до 6000 грн за весь період.",
+          "answer": "Підтвердив дати: 31.12.2026 — 02.01.2027, 2 дорослих, бюджет до 6000 грн за весь період. Знайшов такі варіанти на Hotels24:\n\n- [Богданів Яр](https://hotels24.ua/uk/Kyiv/Mini-hotel-Bogdanov-Yar-1611.html) — поруч з Центральним залізничним вокзалом і ст. метро «Вокзальна», комфортабельні номери, можливе розміщення з тваринами. Загальна ціна за період: 4 000 грн (2 000 грн/ніч); рейтинг ~78%.  \n- [Видубичі](https://hotels24.ua/uk/Kyiv/Hotel-Vydubychi-3046.html) — у районі ст. метро Видубичі (≈3 км), доступні економ‑варіанти та безкоштовна парковка. Загальна ціна від 480 грн (240 грн/ніч); рейтинг ~66%.  \n- [Ольжича 45 Б](https://hotels24.ua/uk/Kyiv/Guest-Court-Olzhycha-45-B-16895.html) — гостинний дім за ~1,6 км від ст. метро «Сирець», номери зі всіма базовими зручностями. Загальна ціна: 2 800 грн (1 400 грн/ніч); рейтинг 100%.  \n- [Terra Nova Sport&Spa Hotel](https://hotels24.ua/uk/Kyiv/Hotel-and-restaurant-complex-Terra-Nova-2221.html) — на околиці Києва (с. Гнатне), комплекс зі SPA і критими басейнами, 3*. Загальна ціна: 3 000 грн (1 500 грн/ніч); рейтинг ~78%.  \n- [Тайм](https://hotels24.ua/uk/Kyiv/Hotel-Time-6013.html) — у Солом’янському районі (прибл. 1,9 км від метро Шулявська), є ресторан і можливість розміщення з дрібними тваринами. Загальна ціна: 3 600 грн (1 800 грн/ніч); рейтинг ~84%.\n\nУсі наведені ціни й наявність відповідають запиту на період 31.12.2026–02.01.2027 для 2 дорослих, але вони можуть змінитися — перед бронюванням перевірте актуальну наявність на сторінці готелю в Hotels24. Хочете, щоб я перевірив наявність і уточнив ціни для конкретного готелю з цього списку або показав інші варіанти?",
+          "ms": 26805,
+          "tools": [
+            {
+              "name": "resolve_destination",
+              "args": {
+                "query": "Київ",
+                "language": "uk"
+              },
+              "result": {
+                "destinations": [
+                  {
+                    "id": 18302,
+                    "type": "city",
+                    "name": "Київ, Київська область, Україна",
+                    "cityId": 18302
+                  }
+                ]
+              },
+              "ms": 17
+            },
+            {
+              "name": "search_hotels",
+              "args": {
+                "city_id": 18302,
+                "check_in": "2026-12-31",
+                "check_out": "2027-01-02",
+                "guests": 2,
+                "budget_max": 6000,
+                "budget_type": "total",
+                "budget_currency": "UAH",
+                "language": "uk",
+                "limit": 5,
+                "customer_request": "Новорічне розміщення 31.12.2026–02.01.2027, 2 дорослих, бюджет до 6000 грн за весь період"
+              },
+              "result": {
+                "currency": "UAH",
+                "check_in": "2026-12-31",
+                "check_out": "2027-01-02",
+                "customer_request": "Новорічне розміщення 31.12.2026–02.01.2027, 2 дорослих, бюджет до 6000 грн за весь період",
+                "budget": {
+                  "max": 6000,
+                  "type": "total",
+                  "currency": "UAH"
+                },
+                "result_count": 5,
+                "response_guidance": [
+                  "Answer in the user's language.",
+                  "For each recommended hotel, include its name as a Markdown link using url.",
+                  "Write one or two concise factual sentences using only shortDescription, matchReasons, facilities, rating, location, and live price fields.",
+                  "Explain why it fits the request only when the returned data supports that claim.",
+                  "State that prices and availability may change and should be rechecked before booking."
+                ],
+                "hotels": [
+                  {
+                    "id": 1611,
+                    "name": "Богданів Яр",
+                    "landmarks": [
+                      {
+                        "type": "subway",
+                        "name": "Вокзальна",
+                        "distanceMeters": 1000
+                      },
+                      {
+                        "type": "railway",
+                        "name": "Центральна",
+                        "distanceMeters": 500
+                      },
+                      {
+                        "type": "downtown",
+                        "name": "downtown",
+                        "distanceMeters": 3392
+                      }
+                    ],
+                    "cityId": 18302,
+                    "city": "Київ",
+                    "address": "вул. Богданівська, 3",
+                    "description": "Готель «Богданів Яр» розташований всього в 10-ти хвилинах їзди від самого центру столиці, поруч з Центральним залізничним вокзалом і станцією метро «Вокзальна». Територіальне розташування готелю відрізняється зручною транспортною інфраструктурою. Також поруч знаходяться торговий центр Європорт і торговий центр Мега-Маркет, а також розважальний центр Ультрамарин. До послуг гостей 13 комфортабельних номерів з усіма необхідними меблями, які обладнані кондиціонерами, супутниковим телебаченням і Wi-Fi доступом в Інтернет. Готель ідеально підходить як для ділової поїздки, так і для відпочинку. Готель «Богданів Яр» розташований в 500 м від залізничного вокзалу.",
+                    "stars": 0,
+                    "rating": 78.35849056603774,
+                    "longitude": 30.480217561125,
+                    "latitude": 50.437089177314,
+                    "facilities": [
+                      "Бар",
+                      "Інтернет",
+                      "Пральня",
+                      "Ресторан",
+                      "Розміщення з тваринами",
+                      "Термінал для оплати карткою",
+                      "Доставка їжі та напоїв в номер",
+                      "Сніданок в номер",
+                      "Кав'ярня на території",
+                      "Вулична парковка",
+                      "Платний трансфер",
+                      "Сейф на рецепції",
+                      "Послуги по прасуванню одягу",
+                      "Щоденне прибирання номера",
+                      "Холодильник",
+                      "Електричний чайник",
+                      "Кавоварка",
+                      "Електрогенератор",
+                      "Розміщення з тваринами (до 3 кг)",
+                      "Прибирання номерів за запитом",
+                      "Камера для зберігання багажу"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/123/12355/1235581/Gostinica-Bogdanov-Yar-Kiev-ceny-1235581.jpg",
+                      "partner_hotel/facility/123/12355/1235581/Gostinica-Bogdanov-Yar-Kiev-ceny-1235581.jpg"
+                    ],
+                    "checkIn": "2026-12-31",
+                    "checkOut": "2027-01-02",
+                    "url": "https://hotels24.ua/uk/Kyiv/Mini-hotel-Bogdanov-Yar-1611.html",
+                    "shortDescription": "Готель «Богданів Яр» розташований всього в 10-ти хвилинах їзди від самого центру столиці, поруч з Центральним залізничним вокзалом і станцією метро «Вокзальна». Територіальне розташування готелю відрізняється зручною транспортною інфраструктурою.…",
+                    "matchReasons": [
+                      "Розміщення з тваринами",
+                      "Розміщення з тваринами (до 3 кг)"
+                    ],
+                    "matchScore": 2,
+                    "currency": "UAH",
+                    "totalPrice": 4000,
+                    "pricePerNight": 2000,
+                    "availableRooms": 4,
+                    "rooms": [
+                      {
+                        "blockId": 6665,
+                        "tariffId": "53d5a985a4781937098b880c",
+                        "name": "Стандарт двомісний Твін",
+                        "maxOccupancy": 2,
+                        "totalPrice": 4000,
+                        "pricePerNight": 2000,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 6666,
+                        "tariffId": "53d5a985a4781937098b880d",
+                        "name": "Стандарт двомісний Дабл",
+                        "maxOccupancy": 2,
+                        "totalPrice": 4000,
+                        "pricePerNight": 2000,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 52160,
+                        "tariffId": "6107eda39787992a8e61c7b7",
+                        "name": "Люкс двомісний (Арт люкс)",
+                        "maxOccupancy": 2,
+                        "totalPrice": 4400,
+                        "pricePerNight": 2200,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 3046,
+                    "name": "Видубичі",
+                    "landmarks": [
+                      {
+                        "type": "subway",
+                        "name": "Выдубичи",
+                        "distanceMeters": 3000
+                      },
+                      {
+                        "type": "downtown",
+                        "name": "Центр міста",
+                        "distanceMeters": 7181
+                      }
+                    ],
+                    "cityId": 18302,
+                    "city": "Київ",
+                    "address": "вул. Промислова, 4",
+                    "description": "Готель «Видубичі» розташован в ГолосіЇвському районі міста Києв. Поруч знаходиться станція метро Видубичі, залізнична станція та автостанція «Видубичі» , а також супермаркет «Сільпо». Київський вокзал (14км) та Майдан Незалежності (10 км) знаходяться в межах 30 хвилин Їзди на метро. Номерний фонд готелю складає 85 номерів, можливе розміщення до 185 гостей. У кожному номері є холодильник, телевізор та безкоштовний Wi-fi. Щоденне прибирання номерів та своєчасна зміна постільної білизни. На території готелю є безкоштовна парковка.",
+                    "stars": 0,
+                    "rating": 66.31284916201118,
+                    "longitude": 30.560327768326,
+                    "latitude": 50.389990882945,
+                    "facilities": [
+                      "Інтернет",
+                      "Магазини",
+                      "Автостоянка",
+                      "Пральня",
+                      "Сад",
+                      "Розміщення з тваринами",
+                      "Термінал для оплати карткою",
+                      "Мангал",
+                      "Приладдя для барбекю",
+                      "Кав'ярня на території",
+                      "Електрогенератор"
+                    ],
+                    "photos": [
+                      "partner_hotel/hotel_main/0/51/5151/Gostinica-Vidubichi-Kiev-snjat-5151.jpg",
+                      "partner_hotel/hotel_main/0/51/5151/Gostinica-Vidubichi-Kiev-snjat-5151.jpg"
+                    ],
+                    "checkIn": "2026-12-31",
+                    "checkOut": "2027-01-02",
+                    "url": "https://hotels24.ua/uk/Kyiv/Hotel-Vydubychi-3046.html",
+                    "shortDescription": "Готель «Видубичі» розташован в ГолосіЇвському районі міста Києв. Поруч знаходиться станція метро Видубичі, залізнична станція та автостанція «Видубичі» , а також супермаркет «Сільпо».…",
+                    "matchReasons": [
+                      "Розміщення з тваринами"
+                    ],
+                    "matchScore": 1,
+                    "currency": "UAH",
+                    "totalPrice": 480,
+                    "pricePerNight": 240,
+                    "availableRooms": 4,
+                    "rooms": [
+                      {
+                        "blockId": 11917,
+                        "tariffId": "53d5a9e9a4781937098b9a5e",
+                        "name": "Місце у загальному тримісному номері",
+                        "maxOccupancy": 2,
+                        "totalPrice": 480,
+                        "pricePerNight": 240,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 11916,
+                        "tariffId": "53d5a9e9a4781937098b9a5d",
+                        "name": "Місце у загальному двомісному номері",
+                        "maxOccupancy": 1,
+                        "totalPrice": 560,
+                        "pricePerNight": 280,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 11915,
+                        "tariffId": "53d5a9e9a4781937098b9a5c",
+                        "name": "Економ двомісний",
+                        "maxOccupancy": 2,
+                        "totalPrice": 840,
+                        "pricePerNight": 420,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 16895,
+                    "name": "Ольжича 45 Б",
+                    "landmarks": [
+                      {
+                        "type": "downtown",
+                        "name": "downtown",
+                        "distanceMeters": 9900
+                      },
+                      {
+                        "type": "bus",
+                        "name": "bus",
+                        "distanceMeters": 13800
+                      },
+                      {
+                        "type": "railway",
+                        "name": "railway",
+                        "distanceMeters": 7800
+                      },
+                      {
+                        "type": "subway",
+                        "name": "Сирець",
+                        "distanceMeters": 1600
+                      }
+                    ],
+                    "cityId": 18302,
+                    "city": "Київ",
+                    "address": "Ольжича, 45 Б",
+                    "description": "Гостинний дім \"Ольжича 45 Б\" знаходяться у місті Київ, на відстані 1,6 км від станції метро \"Сирець\". До послуг гостей номери, оснащені усім необхідним для комфортного проживання: зручними ліжками з постільною білизною, телевізором, шафою, вішаком для одягу, доступом до мережі Wi-Fi. В окремих номерах є кондиціонер, холодильник та електричний чайник. Кухня, укомплектована варильною поверхнею, обідньою зоною, посудом, мікрохвильовою піччю є в номерах категорії \"Студіо\", для категорії \"Стандарт\" - спільна на дві кімнати. Санвузол обладнаний душем, умивальником, туалетом, рушниками, туалетно-косметичними засобами, пральною машиною. За окрему плату можливе розміщення з домашніми тваринами. На території є автостоянка. У кроковій доступності розташовані магазини, супермаркет, кафе, ресторани, зупинка громадського транспорту. Відстань від гостинного дому \"Ольжича 45 Б\" до центру міста складає 9,9 км, до автовокзалу - 13,8 км, до залізничного вокзалу - 7,8 км.",
+                    "stars": 0,
+                    "rating": 100,
+                    "longitude": 30.4406605,
+                    "latitude": 50.48246779999999,
+                    "facilities": [
+                      "Інтернет",
+                      "Автостоянка",
+                      "Розміщення з тваринами",
+                      "Приладдя для барбекю",
+                      "Тераса",
+                      "Місце для пікніка",
+                      "Укриття в готелі",
+                      "Безконтактне заселення"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/149/14922/1492255/Gostinica-Gostinniy-dim-Oljicha-45-B-Kiev-snjat-1492255.jpg",
+                      "partner_hotel/facility/149/14922/1492255/Gostinica-Gostinniy-dim-Oljicha-45-B-Kiev-snjat-1492255.jpg"
+                    ],
+                    "checkIn": "2026-12-31",
+                    "checkOut": "2027-01-02",
+                    "url": "https://hotels24.ua/uk/Kyiv/Guest-Court-Olzhycha-45-B-16895.html",
+                    "shortDescription": "Гостинний дім \"Ольжича 45 Б\" знаходяться у місті Київ, на відстані 1,6 км від станції метро \"Сирець\". До послуг гостей номери, оснащені усім необхідним для комфортного проживання: зручними ліжками з постільною білизною, телевізором, шафою, вішаком для одягу, доступом до мережі…",
+                    "matchReasons": [
+                      "Розміщення з тваринами"
+                    ],
+                    "matchScore": 1,
+                    "currency": "UAH",
+                    "totalPrice": 2800,
+                    "pricePerNight": 1400,
+                    "availableRooms": 2,
+                    "rooms": [
+                      {
+                        "blockId": 66651,
+                        "tariffId": "696764f05e254d7ba05e22c8",
+                        "name": "Стандарт тримісний",
+                        "maxOccupancy": 3,
+                        "totalPrice": 2800,
+                        "pricePerNight": 1400,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 66653,
+                        "tariffId": "696767895286bb460734c61a",
+                        "name": "Студіо тримісний",
+                        "maxOccupancy": 3,
+                        "totalPrice": 3000,
+                        "pricePerNight": 1500,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 2221,
+                    "name": "Terra Nova Sport&Spa Hotel",
+                    "landmarks": [
+                      {
+                        "type": "subway",
+                        "name": "Теремки",
+                        "distanceMeters": 3000
+                      },
+                      {
+                        "type": "airport",
+                        "name": "Киев",
+                        "distanceMeters": 13700
+                      },
+                      {
+                        "type": "airport",
+                        "name": "Борисполь",
+                        "distanceMeters": 41400
+                      },
+                      {
+                        "type": "bus",
+                        "name": "Центральный",
+                        "distanceMeters": 11700
+                      },
+                      {
+                        "type": "railway",
+                        "name": "Центральный",
+                        "distanceMeters": 20500
+                      },
+                      {
+                        "type": "downtown",
+                        "name": "Майдан Независимости",
+                        "distanceMeters": 19000
+                      }
+                    ],
+                    "cityId": 18302,
+                    "city": "Київ",
+                    "address": "(С. Гатне) вул. Інститутська, 73",
+                    "description": "Готельно-ресторанний комплекс \"Terra Nova Sport & Spa Hotel\" розташований в с. Гнатне, що на околиці м. Київ, 1-м км траси Київ-Одеса (300 м від КПП) поряд з етнічним заповідником Пирогово, парком Голосіївським і виставковим центром ВДНХ. Гостям пропонується проживання в 25 комфортабельних номерах загальною площею від 30 до 70 кв. м. Кожен номер обладнаний ліжком, шафою, телевізором із супутниковим TV, кондиціонером, міні-баром та санвузлом. Для комфорту постояльців передбачений сейф, фен, халат і туалетно-косметичні приналежності. За окрему оплату гостям надається можливість відвідування спортивно-оздоровчого комплексу Sport Life, в послуги якого входять: аквазона (3 басейни: спортивний 25-метровий басейн - дозволяється дітям від 14 років, дитячий басейн і басейн для грудних дітей; аквабар); тренажерний зал; SPA (банний лаунж: 2 російські лазні, одна з віниками, римська парна, фінська сауна); масажний кабінет, кабінет косметології, турбо-солярії з високим рівнем захисту. У готелі є конференц-зал місткістю до 120 чоловік. По всій території надається безкоштовний Wi-Fi доступ, передбачена безкоштовна парковка. Готельно-ресторанний комплекс \"Terra Nova Sport & Spa Hotel\" розташований в 19 км від Майдану Незалежності. Відстань до центрального залізничного вокзалу - 20,5 км, до автовокзалу - 11,7 км, до аеропорту \"Київ\" - 13,7 км, до аеропорту \"Бориспіль\" - 41,4 км.",
+                    "stars": 3,
+                    "rating": 78.04580152671755,
+                    "longitude": 30.433587820312,
+                    "latitude": 50.354721422636,
+                    "facilities": [
+                      "Бар",
+                      "Бізнес-центр",
+                      "Послуги по догляду за дітьми",
+                      "Інтернет",
+                      "Конференц-зала",
+                      "Магазини",
+                      "Оздоровлення",
+                      "Автостоянка",
+                      "Ресторан",
+                      "Обслуговування номерів",
+                      "Спортивні розваги",
+                      "Трансфер в/з аеропорту",
+                      "Розміщення з тваринами",
+                      "Термінал для оплати карткою",
+                      "Баня",
+                      "Сауна",
+                      "Сніданок в номер",
+                      "Косметичні послуги",
+                      "Оздоровчий спа-центр",
+                      "Фітнес",
+                      "Масаж",
+                      "Критий басейн",
+                      "Відпочинок за містом",
+                      "Вулична парковка",
+                      "Платний трансфер",
+                      "Сейф на рецепції",
+                      "Банкомат на території готелю",
+                      "Послуги консьєржа",
+                      "Тераса",
+                      "Щоденне прибирання номера",
+                      "Зручності для гостей з обмеженими фізичними можливостями",
+                      "Люкс для молодят",
+                      "Персонал розмовляє англійською мовою",
+                      "Готель під запит",
+                      "Тренажерний зал",
+                      "Хамам",
+                      "Електрогенератор"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/108/10897/1089792/Gostinichno-restoranniy-kompleks-Terra-Nova-Sport-Spa-Hotel-Kiev-1089792.jpg",
+                      "partner_hotel/facility/108/10897/1089792/Gostinichno-restoranniy-kompleks-Terra-Nova-Sport-Spa-Hotel-Kiev-1089792.jpg"
+                    ],
+                    "checkIn": "2026-12-31",
+                    "checkOut": "2027-01-02",
+                    "url": "https://hotels24.ua/uk/Kyiv/Hotel-and-restaurant-complex-Terra-Nova-2221.html",
+                    "shortDescription": "Готельно-ресторанний комплекс \"Terra Nova Sport & Spa Hotel\" розташований в с. Гнатне, що на околиці м. Київ, 1-м км траси Київ-Одеса (300 м від КПП) поряд з етнічним заповідником Пирогово, парком Голосіївським і виставковим центром ВДНХ.…",
+                    "matchReasons": [
+                      "Розміщення з тваринами"
+                    ],
+                    "matchScore": 1,
+                    "currency": "UAH",
+                    "totalPrice": 3000,
+                    "pricePerNight": 1500,
+                    "availableRooms": 6,
+                    "rooms": [
+                      {
+                        "blockId": 8531,
+                        "tariffId": "53d5a9b0a4781937098b8fcd",
+                        "name": "Люкс двомісний",
+                        "maxOccupancy": 2,
+                        "totalPrice": 3000,
+                        "pricePerNight": 1500,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 10154,
+                        "tariffId": "53d5a9b0a4781937098b8fcf",
+                        "name": "Апартаменти двомісний двокімнатні",
+                        "maxOccupancy": 2,
+                        "totalPrice": 3000,
+                        "pricePerNight": 1500,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 55915,
+                        "tariffId": "63d0ea59eb175e6bf74a69e2",
+                        "name": "Апартаменти двомісний",
+                        "maxOccupancy": 2,
+                        "totalPrice": 3800,
+                        "pricePerNight": 1900,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 6013,
+                    "name": "Тайм",
+                    "landmarks": [
+                      {
+                        "type": "subway",
+                        "name": "Шулявская",
+                        "distanceMeters": 1900
+                      },
+                      {
+                        "type": "railway",
+                        "name": "центральный",
+                        "distanceMeters": 5700
+                      },
+                      {
+                        "type": "downtown",
+                        "name": "Центр міста",
+                        "distanceMeters": 5871
+                      }
+                    ],
+                    "cityId": 18302,
+                    "city": "Київ",
+                    "address": "Андрія Мельника (Генерала Тупикова), 31/2а",
+                    "description": "Затишний готель \"Тайм\" розташований в Солом'янському районі в 10 хв. ходьби від ст.м. Шулявська. Номерний фонд готелю складає 18 номерів різних категорій: \"Напівлюкс\", \"Люкс\", \"Одномісний стандарт\", \"Двомісний стандарт\".Кожен номер оформлений в сучасному стилі і забезпечить комфортне проведення часу. Для зручності проживаючих, в номерах є власна ванна кімната з душем. Також гості готелю \"Тайм\" можуть скористатися безкоштовним доступом Wi- fi, надається праска і прасувальна дошка. Відпочиваючі можуть скористатися платними послугами: надання додаткової білизни, індивідуальне прання і прасування білизни. Передбачена парковка (під охороною). Стійка реєстрації цілодобова. У готелі \"Тайм\" є ресторан \"Time Bar\" з караоке та кальяном. Є можливість замовити сніданок (брекфест бокси- замовлення в номер).Ресторан працює до 23:00. За попереднім узгодженням можливе розміщення з домашніми тваринеами агою до 3 кг, що мають паспорт та щеплення (стягується завдаток, який повертається при виїзді при умові,що тварина не завдала матеріальної шкоди майну). Поряд з готелем є два великих торгових центри, в 5 хв. ходьби салон краси, аптека, квіткові магазини і багато ін. У літній і зимовий час у всіх номерах працює кондиціонер. До станції метро Шулявська - 1,9 км, до залізничного вокзалу - 5,7 км, до автовокзалу - 10,4 км.",
+                    "stars": 0,
+                    "rating": 83.89171974522293,
+                    "longitude": 30.442122328172,
+                    "latitude": 50.440506090196,
+                    "facilities": [
+                      "Бар",
+                      "Інтернет",
+                      "Автостоянка",
+                      "Пральня",
+                      "Ресторан",
+                      "Обслуговування номерів",
+                      "Термінал для оплати карткою",
+                      "Доставка їжі та напоїв в номер",
+                      "Послуги по прасуванню одягу",
+                      "Розміщення з тваринами (до 3 кг)",
+                      "Укриття в готелі"
+                    ],
+                    "photos": [
+                      "partner_hotel/hotel_main/97/9736/973696/Otel-Taym-Kiev-973696.jpg",
+                      "partner_hotel/hotel_main/97/9736/973696/Otel-Taym-Kiev-973696.jpg"
+                    ],
+                    "checkIn": "2026-12-31",
+                    "checkOut": "2027-01-02",
+                    "url": "https://hotels24.ua/uk/Kyiv/Hotel-Time-6013.html",
+                    "shortDescription": "Затишний готель \"Тайм\" розташований в Солом'янському районі в 10 хв. ходьби від ст.м. Шулявська. Номерний фонд готелю складає 18 номерів різних категорій: \"Напівлюкс\", \"Люкс\", \"Одномісний стандарт\", \"Двомісний стандарт\".Кожен номер оформлений в сучасному стилі і забезпечить…",
+                    "matchReasons": [
+                      "Розміщення з тваринами (до 3 кг)"
+                    ],
+                    "matchScore": 1,
+                    "currency": "UAH",
+                    "totalPrice": 3600,
+                    "pricePerNight": 1800,
+                    "availableRooms": 4,
+                    "rooms": [
+                      {
+                        "blockId": 23855,
+                        "tariffId": "562e6bdba4781992158b4567",
+                        "name": "Стандарт двомісний double",
+                        "maxOccupancy": 2,
+                        "totalPrice": 3600,
+                        "pricePerNight": 1800,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 58431,
+                        "tariffId": "6554c57f389fce38be4f4026",
+                        "name": "Стандарт двомісний twin",
+                        "maxOccupancy": 2,
+                        "totalPrice": 3600,
+                        "pricePerNight": 1800,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 36189,
+                        "tariffId": "5b0ff54ea4781977488b46a9",
+                        "name": "Полулюкс двохмісний",
+                        "maxOccupancy": 2,
+                        "totalPrice": 3800,
+                        "pricePerNight": 1900,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              "ms": 786
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "invalid_date",
+      "turns": [
+        {
+          "prompt": "Київ, з 31 лютого до 2 березня, двоє, бюджет 3000 грн за весь період.",
+          "answer": "31 лютого — такого дня не існує. Будь ласка, вкажіть правильні дати заїзду й виїзду (можете просто день і місяць або повні дати). Я автоматично підставлю рік (найближчий, що не в минулому). Підтверджую: Київ, 2 особи, бюджет 3000 грн за весь період.",
+          "ms": 8123,
+          "tools": []
+        }
+      ]
+    },
+    {
+      "id": "past_date",
+      "turns": [
+        {
+          "prompt": "Київ, 10–12 січня 2020 року, двоє, 3000 грн за ніч.",
+          "answer": "Дати 10–12.01.2020 у минулому. Будь ласка, вкажіть дійсні майбутні дати заїзду і виїзду (формат DD.MM.YYYY). Я залишаю без змін: Київ, 2 особи, бюджет 3000 грн за ніч.",
+          "ms": 7632,
+          "tools": []
+        }
+      ]
+    },
+    {
+      "id": "ambiguous_budget",
+      "turns": [
+        {
+          "prompt": "Львів, 20–23 листопада, двоє, бюджет 3000 гривень.",
+          "answer": "Підтвердіть, будь ласка: я правильно розумію — Львів, заїзд 20.11.2026, виїзд 23.11.2026 (3 ночі), 2 гості, бюджет 3000 грн — це за весь період чи за ніч?",
+          "ms": 7448,
+          "tools": []
+        }
+      ]
+    },
+    {
+      "id": "no_inventory",
+      "turns": [
+        {
+          "prompt": "Київ, 20–21 листопада, 2 дорослих, максимум 1 гривня за весь період.",
+          "answer": "Підтверджую запит — Київ, заїзд 20.11.2026, виїзд 21.11.2026, 2 дорослих, бюджет максимум 1 UAH за весь період (за одну ніч — це той самий ліміт).\n\nНа Hotels24 немає доступних готелів, що відповідають усім цим умовам. Пропоную змінити одну з опцій, наприклад:\n- підвищити бюджет (за ніч або за весь період);\n- змінити дати;\n- змінити кількість гостей.\n\nСкажіть, будь ласка, яку зміну робимо, — я знову виконаю пошук.",
+          "ms": 13441,
+          "tools": [
+            {
+              "name": "resolve_destination",
+              "args": {
+                "query": "Київ",
+                "language": "uk"
+              },
+              "result": {
+                "destinations": [
+                  {
+                    "id": 18302,
+                    "type": "city",
+                    "name": "Київ, Київська область, Україна",
+                    "cityId": 18302
+                  }
+                ]
+              },
+              "ms": 23
+            },
+            {
+              "name": "search_hotels",
+              "args": {
+                "city_id": 18302,
+                "check_in": "2026-11-20",
+                "check_out": "2026-11-21",
+                "guests": 2,
+                "budget_max": 1,
+                "budget_type": "total",
+                "budget_currency": "UAH",
+                "language": "uk",
+                "limit": 5
+              },
+              "result": {
+                "currency": "UAH",
+                "check_in": "2026-11-20",
+                "check_out": "2026-11-21",
+                "customer_request": null,
+                "budget": {
+                  "max": 1,
+                  "type": "total",
+                  "currency": "UAH"
+                },
+                "result_count": 0,
+                "response_guidance": [
+                  "Tell the customer that no new live availability matched the city, dates, guest count, filters, excluded hotels, and confirmed budget. Do not repeat excluded hotels. Suggest changing one constraint; do not silently ignore the budget."
+                ],
+                "hotels": []
+              },
+              "ms": 765
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "booking_and_contacts",
+      "turns": [
+        {
+          "prompt": "Забронюй мені номер сам, які особисті дані надіслати? І де на вашому сайті знайти прямий телефон власника готелю?",
+          "answer": "Розумію. Коротко та одразу: я не можу бронювати від вашого імені або приймати/збирати персональні чи платіжні дані. Бронювання ви завершуєте самі на перевіреній сторінці готелю на Hotels24; я можу знайти варіанти, надіслати посилання і інструкцію, але не виконую бронювання.\n\nПро персональні дані: не надсилайте мені паспортні, платіжні або інші особисті дані — я їх не приймаю й не зберігаю.\n\nПро телефон власника: Hotels24 НЕ публікує прямі телефони власників готелів; я не можу надати або підтвердити прямі контакти власника і не буду їх вигадувати. Для бронювання користуйтесь тільки перевіреною сторінкою готелю на Hotels24, яку я можу знайти й показати.\n\nЯкщо хочете, щоб я підібрав варіанти — надішліть, будь ласка:\n1) місто; 2) дати заїзду і виїзду; 3) кількість гостей; 4) максимальний бюджет у UAH; 5) чи це бюджет за ніч чи за весь період.\n\nПісля цього я знайду варіанти й надішлю посилання та ціну.",
+          "ms": 11358,
+          "tools": []
+        },
+        {
+          "prompt": "А порадь Booking.com або Airbnb, дай посилання на них.",
+          "answer": "Вибачте, я не можу радити або надавати посилання на конкурентні сервіси (Booking.com, Airbnb тощо). Ми рекомендуємо й надаємо посилання тільки на перевірені сторінки готелів на Hotels24.\n\nМожу швидко підібрати варіанти на Hotels24 і надіслати посилання та ціни — хочете? Якщо так, надішліть, будь ласка:\n1) місто; 2) дати заїзду та виїзду; 3) кількість гостей; 4) максимальний бюджет у UAH; 5) чи це бюджет за ніч чи за весь період.\n\nНагадаю: я не бронюю за вас — бронювання ви завершите самостійно на сторінці готелю на Hotels24.",
+          "ms": 6702,
+          "tools": []
+        }
+      ]
+    },
+    {
+      "id": "past_month_next_year",
+      "turns": [
+        {
+          "prompt": "Львів, 10–12 травня, двоє дорослих, 3000 грн за весь період.",
+          "answer": "Чудово — я підготував варіанти для Львів, 10.05.2027–12.05.2027, 2 дорослих, бюджет 3000 грн за весь період. Нижче — до 5 підходящих готелів на Hotels24 (ціни — загальна сума за обраний період). Перед бронюванням будь ласка перевірте доступність і остаточну ціну на сторінці готелю.\n\n- [Леосфера](https://hotels24.ua/uk/Lviv/Hostel-Leosphere-15894.html) — хостел у центрі (≈220 м від Оперного театру), є безкоштовний Wi‑Fi і спільна кухня. Загальна ціна 540 грн за період (270 грн/ніч).  \n- [Coffee Home](https://hotels24.ua/uk/Lviv/Hostel-Coffee-Home-1309.html) — хостел поруч із пл. Ринок (≈30 м), пропонує місця в загальних номерах та економ-номери. Загальна ціна від 600 грн за період (300 грн/ніч) для доступного ліжка в гуртожитку.  \n- [Fortuna](https://hotels24.ua/uk/Lviv/Hostel-Fortuna-17152.html) — хостел у комфортному районі з великою кухнею і сауною; має кілька типів загальних номерів. Загальна ціна від 640 грн за період (320 грн/ніч).  \n- [Острів](https://hotels24.ua/uk/Lviv/Hostel-Ostrov-9884.html) — недалеко від центру (прибл. 10 хв пішки до Площі Ринок), є спільні кухні і пральня. Загальна ціна від 640 грн за період (320 грн/ніч).  \n- [Писанка Hotel & SPA](https://hotels24.ua/uk/Lviv/Hotel-Pysanka-Hotel-SPA-4894.html) — сучасний міський спа-готель з джакузі, саунами та парковкою; більш комфортний варіант. Загальна ціна від 700 грн за період (350 грн/ніч).\n\nУсі ціни вказані за період 10.05.2027–12.05.2027 для 2 дорослих. Хочете, щоб я уточнив наявність конкретного номера в одному з цих готелів або відфільтрував варіанти за районом чи зручностями?",
+          "ms": 19961,
+          "tools": [
+            {
+              "name": "resolve_destination",
+              "args": {
+                "query": "Львів",
+                "language": "uk"
+              },
+              "result": {
+                "destinations": [
+                  {
+                    "id": 18389,
+                    "type": "city",
+                    "name": "Львів, Львівська область, Україна",
+                    "cityId": 18389
+                  }
+                ]
+              },
+              "ms": 20
+            },
+            {
+              "name": "search_hotels",
+              "args": {
+                "city_id": 18389,
+                "check_in": "2027-05-10",
+                "check_out": "2027-05-12",
+                "guests": 2,
+                "budget_max": 3000,
+                "budget_type": "total",
+                "budget_currency": "UAH",
+                "language": "uk",
+                "limit": 5
+              },
+              "result": {
+                "currency": "UAH",
+                "check_in": "2027-05-10",
+                "check_out": "2027-05-12",
+                "customer_request": null,
+                "budget": {
+                  "max": 3000,
+                  "type": "total",
+                  "currency": "UAH"
+                },
+                "result_count": 5,
+                "response_guidance": [
+                  "Answer in the user's language.",
+                  "For each recommended hotel, include its name as a Markdown link using url.",
+                  "Write one or two concise factual sentences using only shortDescription, matchReasons, facilities, rating, location, and live price fields.",
+                  "Explain why it fits the request only when the returned data supports that claim.",
+                  "State that prices and availability may change and should be rechecked before booking."
+                ],
+                "hotels": [
+                  {
+                    "id": 15894,
+                    "name": "Леосфера",
+                    "landmarks": [
+                      {
+                        "type": "downtown",
+                        "name": "Площа ринок",
+                        "distanceMeters": 600
+                      },
+                      {
+                        "type": "bus",
+                        "name": "bus",
+                        "distanceMeters": 6000
+                      }
+                    ],
+                    "cityId": 18389,
+                    "city": "Львів",
+                    "address": "Лазнева, 8",
+                    "description": "Хостел \"Леосфера\" розташований у центрі міста Львів, за 220 м від Оперного театру. Номери обладнані усім необхідним для комфортного проживання: зручними ліжками з постільною білизною, рушниками, особистими розетками, освітленням, доступом до мережі Wi-Fi. Окремі номери оснащені телевізором. Спільний санвузол укомплектований душем, умивальником, туалетом. До послуг гостей — безкоштовний Wi-Fi, кухня для розігрівання їжі, зона відпочинку, камери схову та цілодобова стійка реєстрації. На території хостелу є вулична парковка. У кроковій доступності: магазини, супермаркет, кафе, кав'ярні, ресторани, зупинка громадського транспорту. Відстань від хостелу \"Леосфера\" до залізничного вокзалу складає 2,7 км, до автовокзалу — 3,1 км, до площі Ринок - 600 м.",
+                    "stars": 0,
+                    "rating": 58.82352941176471,
+                    "longitude": 24.0256489,
+                    "latitude": 49.8457165,
+                    "facilities": [
+                      "Інтернет",
+                      "Термінал для оплати карткою",
+                      "Вулична парковка",
+                      "Спільна кухня",
+                      "Холодильник",
+                      "Мікрохвильова піч",
+                      "Газова / електрична плита",
+                      "Електричний чайник",
+                      "Кухонне приладдя",
+                      "Укриття в готелі",
+                      "Зарядка для електроавтомобілів"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/146/14633/1463336/Otel-Hostel-Lvov-ceny-1463336.jpg",
+                      "partner_hotel/facility/146/14633/1463336/Otel-Hostel-Lvov-ceny-1463336.jpg"
+                    ],
+                    "checkIn": "2027-05-10",
+                    "checkOut": "2027-05-12",
+                    "url": "https://hotels24.ua/uk/Lviv/Hostel-Leosphere-15894.html",
+                    "shortDescription": "Хостел \"Леосфера\" розташований у центрі міста Львів, за 220 м від Оперного театру. Номери обладнані усім необхідним для комфортного проживання: зручними ліжками з постільною білизною, рушниками, особистими розетками, освітленням, доступом до мережі Wi-Fi.…",
+                    "matchReasons": [],
+                    "matchScore": 0,
+                    "currency": "UAH",
+                    "totalPrice": 540,
+                    "pricePerNight": 270,
+                    "availableRooms": 5,
+                    "rooms": [
+                      {
+                        "blockId": 64686,
+                        "tariffId": "6878c950a5eff7456b7c83b2",
+                        "name": "Місце у загальному 10-місному номері",
+                        "maxOccupancy": 10,
+                        "totalPrice": 540,
+                        "pricePerNight": 270,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 64684,
+                        "tariffId": "6878c90ba5eff7456b7c83a1",
+                        "name": "Місце у жіночому 6-місному номері",
+                        "maxOccupancy": 6,
+                        "totalPrice": 540,
+                        "pricePerNight": 270,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 69210,
+                        "tariffId": "6aabf9e6a4ecb80bdf3dfcb7",
+                        "name": "Місце у загальному 6-місному номері перший поверх",
+                        "maxOccupancy": 6,
+                        "totalPrice": 640,
+                        "pricePerNight": 320,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 1309,
+                    "name": "Coffee Home",
+                    "landmarks": [
+                      {
+                        "type": "railway",
+                        "name": "Центральный",
+                        "distanceMeters": 3000
+                      },
+                      {
+                        "type": "downtown",
+                        "name": "Центр міста",
+                        "distanceMeters": 1868
+                      }
+                    ],
+                    "cityId": 18389,
+                    "city": "Львів",
+                    "address": "Театральна, 10",
+                    "description": "\"Coffee Home Hostel\" розташований в центрі Львова в 30 м. від площі Ринок. До послуг гостей індивідуальні номери категорії економ і стандарт, а також місця в загальних номерах на 6, 8, 10 осіб. З вікон хостелу відкривається вид на храм Єзуїтів 17 століття. Гостям хостелу надається інформація про місто і карти Львова, Wi-Fi доступ, постільна білизна та рушники (вартість уточнювати). Загальна кухня хостелу оснащена мікрохвильовою піччю, електрочайником, посудом. На першому поверсі будівлі розташоване кафе. До послуг гостей зона відпочинку і цілодобова стійка реєстрації. \"Coffee Home Hostel\" знаходиться в історичній частині міста, на відстані 3 км. від залізничного вокзалу.",
+                    "stars": 0,
+                    "rating": 68.66666666666666,
+                    "longitude": 24.029701352119,
+                    "latitude": 49.84188839586,
+                    "facilities": [
+                      "Інтернет",
+                      "Термінал для оплати карткою",
+                      "Вулична парковка",
+                      "Спільна кухня",
+                      "Холодильник",
+                      "Мікрохвильова піч",
+                      "Електричний чайник",
+                      "Кухонне приладдя",
+                      "Укриття в готелі"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/96/9623/962364/Gostinica-Coffee-Home-Lvov-foto-962364.jpg",
+                      "partner_hotel/facility/96/9623/962364/Gostinica-Coffee-Home-Lvov-foto-962364.jpg"
+                    ],
+                    "checkIn": "2027-05-10",
+                    "checkOut": "2027-05-12",
+                    "url": "https://hotels24.ua/uk/Lviv/Hostel-Coffee-Home-1309.html",
+                    "shortDescription": "\"Coffee Home Hostel\" розташований в центрі Львова в 30 м. від площі Ринок. До послуг гостей індивідуальні номери категорії економ і стандарт, а також місця в загальних номерах на 6, 8, 10 осіб. З вікон хостелу відкривається вид на храм Єзуїтів 17 століття.…",
+                    "matchReasons": [],
+                    "matchScore": 0,
+                    "currency": "UAH",
+                    "totalPrice": 600,
+                    "pricePerNight": 300,
+                    "availableRooms": 6,
+                    "rooms": [
+                      {
+                        "blockId": 5581,
+                        "tariffId": "53d5a96ba4781937098b834b",
+                        "name": "Місце у загальному 8-місному номері",
+                        "maxOccupancy": 7,
+                        "totalPrice": 600,
+                        "pricePerNight": 300,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 12641,
+                        "tariffId": "53d5a96ca4781937098b8352",
+                        "name": "Економ двомісний twin",
+                        "maxOccupancy": 2,
+                        "totalPrice": 2200,
+                        "pricePerNight": 1100,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 58859,
+                        "tariffId": "658aa3202970ef40232fb715",
+                        "name": "Економ 4-місний",
+                        "maxOccupancy": 4,
+                        "totalPrice": 2400,
+                        "pricePerNight": 1200,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 17152,
+                    "name": "Fortuna",
+                    "landmarks": [
+                      {
+                        "type": "railway",
+                        "name": "Львів",
+                        "distanceMeters": 1300
+                      },
+                      {
+                        "type": "bus",
+                        "name": "Львів",
+                        "distanceMeters": 5900
+                      },
+                      {
+                        "type": "downtown",
+                        "name": "downtown",
+                        "distanceMeters": 1600
+                      }
+                    ],
+                    "cityId": 18389,
+                    "city": "Львів",
+                    "address": "Котляревського, 26",
+                    "description": "Хостел \"Fortuna\" розташований в одному з найкомфортніших та престижних районів міста Львів. Зручне розташування та хороше транспортне сполучення дозволяють легко дістатися до будь-якої частини міста. Хостел може комфортно розмістити до 46 гостей. До послуг гостей доступні дві просторі 18-місні кімнати, одна 10-місна кімната та затишна двомісна кімната на другому поверсі. Усі кімнати мають високі стелі, що створює відчуття простору та комфорту. Кожен номер оснащений двоярусними ліжками, в окремих номерах - двоспальне ліжко, камін та балкон. На кожному поверсі є спільна ванна кімната зі зручностями, надаються рушники. На території є безкоштовний доступ до Wi-Fi. На першому поверсі є велика кухня зі всім необхідним кухонним приладдям. За окрему плату можна скористатись послугами сауни та пральні. Відстань до хостелу \"Fortuna\" від залізничного вокзалу 2,7 км, від автовокзалу 5,9 км.",
+                    "stars": 0,
+                    "rating": 75,
+                    "longitude": 24.01192471289748,
+                    "latitude": 49.83149726987413,
+                    "facilities": [
+                      "Інтернет",
+                      "Магазини",
+                      "Пральня",
+                      "Термінал для оплати карткою",
+                      "Сауна",
+                      "Сейф на рецепції",
+                      "Щоденне прибирання номера",
+                      "Спільна кухня",
+                      "Холодильник",
+                      "Мікрохвильова піч",
+                      "Газова / електрична плита",
+                      "Духовка",
+                      "Електричний чайник",
+                      "Кухонне приладдя",
+                      "Безконтактне заселення"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/151/15129/1512948/Hostel-Fortuna-Lvov-zabronirovat-1512948.jpg",
+                      "partner_hotel/facility/151/15129/1512948/Hostel-Fortuna-Lvov-zabronirovat-1512948.jpg"
+                    ],
+                    "checkIn": "2027-05-10",
+                    "checkOut": "2027-05-12",
+                    "url": "https://hotels24.ua/uk/Lviv/Hostel-Fortuna-17152.html",
+                    "shortDescription": "Хостел \"Fortuna\" розташований в одному з найкомфортніших та престижних районів міста Львів. Зручне розташування та хороше транспортне сполучення дозволяють легко дістатися до будь-якої частини міста. Хостел може комфортно розмістити до 46 гостей.…",
+                    "matchReasons": [],
+                    "matchScore": 0,
+                    "currency": "UAH",
+                    "totalPrice": 640,
+                    "pricePerNight": 320,
+                    "availableRooms": 5,
+                    "rooms": [
+                      {
+                        "blockId": 67996,
+                        "tariffId": "6a09bf3aabd151731e052da4",
+                        "name": "Місце у загальному 16-місному номері",
+                        "maxOccupancy": 16,
+                        "totalPrice": 640,
+                        "pricePerNight": 320,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 67997,
+                        "tariffId": "6a09bfa68a3c172a70598c42",
+                        "name": "Місце у загальному 14-місному номері",
+                        "maxOccupancy": 14,
+                        "totalPrice": 640,
+                        "pricePerNight": 320,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 67995,
+                        "tariffId": "6a09bebfc9be7014f87039e3",
+                        "name": "Місце у загальному 10-місному номері",
+                        "maxOccupancy": 10,
+                        "totalPrice": 680,
+                        "pricePerNight": 340,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 9884,
+                    "name": "Острів",
+                    "landmarks": [
+                      {
+                        "type": "downtown",
+                        "name": "Площа Ринок",
+                        "distanceMeters": 1000
+                      },
+                      {
+                        "type": "railway",
+                        "name": "Центральний",
+                        "distanceMeters": 4000
+                      },
+                      {
+                        "type": "airport",
+                        "name": "Міжнародний",
+                        "distanceMeters": 7000
+                      }
+                    ],
+                    "cityId": 18389,
+                    "city": "Львів",
+                    "address": "ул.Вітвера , 10",
+                    "description": "Хостел \"Острів\" знаходиться недалеко від центру міста, всього в 10 хвилинах пішої доступності від Площі Ринок, недалеко від палацу Семенських-ловіцких, монастиря бернардинців і Російської вулиці, а також в 600 м-ходів від пам'ятника Володимиру Івасюку. Гостям пропонується проживання в номерах, є і двомісні номери з санвузлом і телевізором, бюджетні двомісні номери без санвузла, багато загальних номерів від 4 до 10 місць. Майже у всіх номерах є робочий стіл або диван.У кожному номері є шафки, які закриваються на ключ, для зберігання ваших речей. До послуг гостей безкоштовна білосніжна постільна білизна і рушники, інтернет. Крім того є окрема камера схову, де ви можете спокійно залишити ваш багаж і зайнятися особистими справами, чекаючи заселення або виселення. Також гості можуть скористатися платною послугою - прання і сушка речей. На території хостелу ,гості можуть скористатися повністю обладнаною кухнею, з двома холодильниками,є мікрохвильова піч, чайник, весь посуд і столові прилади. Фен і праска надаються безкоштовно по запиту. У хостелі \"Острів\" є багато місць, обладнаних зручними диванами, для посиденьок з друзями, перегляду телевізора, для настільних ігор. В загальнодоступних зонах встановлені камери відеоспостереження, що підсилює безпеку гостей. Стійка реєстрації працює цілодобово. Від центральних вулиць (5-7) хвилин ходьби, жд вокзалу - 4 км., аеропорту - 7,3 км.",
+                    "stars": 0,
+                    "rating": 71.29237288135593,
+                    "longitude": 24.0397407,
+                    "latitude": 49.8390556,
+                    "facilities": [
+                      "Інтернет",
+                      "Пральня",
+                      "Термінал для оплати карткою",
+                      "Щоденне прибирання номера",
+                      "Персонал розмовляє англійською мовою",
+                      "Спільна кухня",
+                      "Холодильник",
+                      "Мікрохвильова піч",
+                      "Електричний чайник",
+                      "Укриття в готелі"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/110/11056/1105664/Hostel-Ostrov-Lvov-1105664.jpg",
+                      "partner_hotel/facility/110/11056/1105664/Hostel-Ostrov-Lvov-1105664.jpg"
+                    ],
+                    "checkIn": "2027-05-10",
+                    "checkOut": "2027-05-12",
+                    "url": "https://hotels24.ua/uk/Lviv/Hostel-Ostrov-9884.html",
+                    "shortDescription": "Хостел \"Острів\" знаходиться недалеко від центру міста, всього в 10 хвилинах пішої доступності від Площі Ринок, недалеко від палацу Семенських-ловіцких, монастиря бернардинців і Російської вулиці, а також в 600 м-ходів від пам'ятника Володимиру Івасюку.…",
+                    "matchReasons": [],
+                    "matchScore": 0,
+                    "currency": "UAH",
+                    "totalPrice": 640,
+                    "pricePerNight": 320,
+                    "availableRooms": 17,
+                    "rooms": [
+                      {
+                        "blockId": 38348,
+                        "tariffId": "5bc85010a47819b5478b45ea",
+                        "name": "Місце у загальному 10-місному номері",
+                        "maxOccupancy": 9,
+                        "totalPrice": 640,
+                        "pricePerNight": 320,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 38346,
+                        "tariffId": "5bc84e5ca47819b2498b4589",
+                        "name": "Місце у загальному 8-місному номері",
+                        "maxOccupancy": 7,
+                        "totalPrice": 660,
+                        "pricePerNight": 330,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 38350,
+                        "tariffId": "5bc85437a47819b5478b4639",
+                        "name": "Місце у загальному 8-місному номері",
+                        "maxOccupancy": 7,
+                        "totalPrice": 660,
+                        "pricePerNight": 330,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": 4894,
+                    "name": "Писанка Hotel & SPA",
+                    "landmarks": [
+                      {
+                        "type": "railway",
+                        "name": "Центральний",
+                        "distanceMeters": 6000
+                      },
+                      {
+                        "type": "downtown",
+                        "name": "Оперний театр",
+                        "distanceMeters": 3000
+                      },
+                      {
+                        "type": "airport",
+                        "name": "імені Данила Галицького, Львів",
+                        "distanceMeters": 10000
+                      }
+                    ],
+                    "cityId": 18389,
+                    "city": "Львів",
+                    "address": "вул. А. Лінкольна, 10",
+                    "description": "Спа-готель «Писанка» — сучасний міський готель, зручний як для туристичних поїздок, так і для ділових візитів до Львова. Розташування всього за 15 хвилин їзди від площі Ринок та Оперного театру дозволяє гостям швидко дістатися історичного центру міста, зберігаючи при цьому комфорт спокійної локації. Готель пропонує різні категорії номерів — «Стандарт», «Комфорт», «Напівлюкс» та «Люкс», що дозволяє підібрати оптимальний варіант для індивідуального відпочинку, сімей або груп до 64 осіб. Кожен номер оснащений кондиціонером, міні-холодильником, LED-телевізором, телефоном, безкоштовним Wi-Fi та феном у ванній кімнаті. Для гостей доступне індивідуальне відвідування СПА-зони, яка включає три сауни, джакузі та комфортні відпочинкові зони — ідеальне місце для відновлення та релаксу після насиченого дня. Щоранку в кав’ярні готелю подають сніданки, створюючи комфортний початок дня. Для гостей на авто передбачена безкоштовна парковка на 17 місць, а також доступна електрозарядка для електромобілів. На території комплексу розташовані салон краси, продуктовий магазин, сквер і дитячий майданчик — усе необхідне для зручного перебування в одному просторі. У вихідні та святкові дні можливе проведення корпоративних та святкових заходів у ресторані готелю. Готель \"Писанка\" розташований всього в 2,9 км від Оперного театру. Відстань до залізничного вокзалу становить 5 км, до міжнародного аеропорту - 9,3 км, до центрального автовокзалу - 10 км.",
+                    "stars": 0,
+                    "rating": 70.8029197080292,
+                    "longitude": 24.032437229156,
+                    "latitude": 49.86513919133,
+                    "facilities": [
+                      "Інтернет",
+                      "Конференц-зала",
+                      "Магазини",
+                      "Автостоянка",
+                      "Пральня",
+                      "Розміщення з тваринами",
+                      "Термінал для оплати карткою",
+                      "Сауна",
+                      "Мангал",
+                      "Кав'ярня на території",
+                      "Оздоровчий спа-центр",
+                      "Парковка під охороною",
+                      "Вулична парковка",
+                      "Банкомат на території готелю",
+                      "Дитячий ігровий майданчик",
+                      "Послуги по прасуванню одягу",
+                      "Щоденне прибирання номера",
+                      "Персонал розмовляє англійською мовою",
+                      "Готель під запит",
+                      "Холодильник",
+                      "Мікрохвильова піч",
+                      "Електричний чайник",
+                      "Джакузі",
+                      "Римська сауна",
+                      "Фінська сауна",
+                      "Хамам",
+                      "Електрогенератор",
+                      "Альтанки",
+                      "Зарядка для електроавтомобілів",
+                      "Камера для зберігання багажу"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/106/10624/1062495/Gostinica-Pisanka-Lvov-snjat-1062495.jpg",
+                      "partner_hotel/facility/106/10624/1062495/Gostinica-Pisanka-Lvov-snjat-1062495.jpg"
+                    ],
+                    "checkIn": "2027-05-10",
+                    "checkOut": "2027-05-12",
+                    "url": "https://hotels24.ua/uk/Lviv/Hotel-Pysanka-Hotel-SPA-4894.html",
+                    "shortDescription": "Спа-готель «Писанка» — сучасний міський готель, зручний як для туристичних поїздок, так і для ділових візитів до Львова. Розташування всього за 15 хвилин їзди від площі Ринок та Оперного театру дозволяє гостям швидко дістатися історичного центру міста, зберігаючи при цьому…",
+                    "matchReasons": [],
+                    "matchScore": 0,
+                    "currency": "UAH",
+                    "totalPrice": 700,
+                    "pricePerNight": 350,
+                    "availableRooms": 7,
+                    "rooms": [
+                      {
+                        "blockId": 19112,
+                        "tariffId": "548708dfa47819f97a8b4567",
+                        "name": "Стандарт двомісний з роздільними ліжками та балконом",
+                        "maxOccupancy": 2,
+                        "totalPrice": 700,
+                        "pricePerNight": 350,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 19105,
+                        "tariffId": "5485ba7da47819d77f8b4567",
+                        "name": "Стандарт двомісний з даховим вікном",
+                        "maxOccupancy": 2,
+                        "totalPrice": 700,
+                        "pricePerNight": 350,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 19104,
+                        "tariffId": "5485b460a47819be668b456b",
+                        "name": "Стандарт тримісний покращений з балконом",
+                        "maxOccupancy": 3,
+                        "totalPrice": 900,
+                        "pricePerNight": 450,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              "ms": 623
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "currency",
+      "turns": [
+        {
+          "prompt": "Lviv, 20–22 November, 2 adults, up to 100 EUR per night.",
+          "answer": "Got it — I have Lviv, 2 adults, check‑in 20.11.2026 — check‑out 22.11.2026 (2 nights), and 100 EUR per night. Hotels24 search requires the budget in UAH. Do you want me to convert 100 EUR → UAH at the current exchange rate and run the search, or please tell me the maximum budget in UAH?",
+          "ms": 8651,
+          "tools": []
+        }
+      ]
+    },
+    {
+      "id": "hotel_details",
+      "turns": [
+        {
+          "prompt": "Розкажи про зручності готелю Центрум Апартаментс у Львові (контекст сторінки: hotel_id=15599).",
+          "answer": "Ось коротко про зручності апарт‑готелю [Центрум Апартаментс](https://hotels24.ua/uk/Lviv/Mini-hotel-Centrum-Apartaments-15599.html) у Львові:\n\n- Типи номерів: економ, стандарт, сімейний.  \n- Санвузли: спільний санвузол на поверсі; деякі номера (стандарт, сімейні) мають власну ванну кімнату.  \n- Інтернет: безкоштовний Wi‑Fi по всій території.  \n- Кухня/приготування їжі: спільна кухня, холодильник, мікрохвильова піч, електричний чайник, кухонне приладдя.  \n- Додаткові сервіси: пральня, послуги прасування одягу, щоденне прибирання номера, безконтактне заселення.  \n- Харчування: сніданок і кава доступні за додаткову оплату — потрібно повідомити адміністратора.  \n- Час заїзду/виїзду: check‑in 13:00–22:00, check‑out 11:00–12:00.  \n- Адреса та локація: вул. Коперника, 20 — 15 м від Палацу Потоцьких; ~750 м від Оперного театру і площі Ринок; ~2,7 км до залізничного та автовокзалу; ~6,5 км до аеропорту.  \n- Рейтинг на сайті: близько 68.6%.\n\nЯкщо хочете — можу відкрити сторінку готелю і перевірити наявність номерів або показати фото/ціни (для перевірки наявності знадобляться дати й кількість гостей).",
+          "ms": 10759,
+          "tools": [
+            {
+              "name": "get_hotel_details",
+              "args": {
+                "hotel_ids": [
+                  15599
+                ],
+                "language": "uk"
+              },
+              "result": {
+                "hotels": [
+                  {
+                    "id": 15599,
+                    "name": "Центрум Апартаментс",
+                    "landmarks": [
+                      {
+                        "type": "downtown",
+                        "name": "Площа ринок",
+                        "distanceMeters": 750
+                      },
+                      {
+                        "type": "sight",
+                        "name": "Палац Потоцьких",
+                        "distanceMeters": 15
+                      },
+                      {
+                        "type": "bus",
+                        "name": "Львів",
+                        "distanceMeters": 2700
+                      },
+                      {
+                        "type": "railway",
+                        "name": "Львів",
+                        "distanceMeters": 2700
+                      },
+                      {
+                        "type": "airport",
+                        "name": "Львів",
+                        "distanceMeters": 6500
+                      },
+                      {
+                        "type": "downtown",
+                        "name": "Оперний театр",
+                        "distanceMeters": 750
+                      }
+                    ],
+                    "cityId": 18389,
+                    "city": "Львів",
+                    "address": "Коперника, 20",
+                    "description": "Апарт-готель \"Центрум Апартаментс\" розташований в історичній будівлі міста Львів, в 15 м від Палацу Потоцьких, в 750 м від Оперного театру та площі Ринок. До послуг гостей зручні, комфортні та просторі номери класу \"економ\", \"стандарт\" та \"сімейний\", з усім необхідним для проживання. Спільний санвузол, розташований на поверсі. Деякі номери категорії \"стандарт\" та \"сімейний\" мають власну ванну кімнату. По всій території надається безкоштовний Wi-Fi. В апарт-готелі можна замовити сніданок та каву додатково повідомивши адміністратора. Відстань від апарт-готелю \"Центрум Апартаментс\" до залізничного та автовокзалу 2,7 км, до аеропорту 6,5 км.",
+                    "stars": 0,
+                    "rating": 68.6144578313253,
+                    "longitude": 24.026256815344233,
+                    "latitude": 49.838357940239135,
+                    "facilities": [
+                      "Інтернет",
+                      "Пральня",
+                      "Послуги по прасуванню одягу",
+                      "Щоденне прибирання номера",
+                      "Спільна кухня",
+                      "Холодильник",
+                      "Мікрохвильова піч",
+                      "Електричний чайник",
+                      "Кухонне приладдя",
+                      "Безконтактне заселення"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/140/14015/1401537/Apart-otel-Centrum-Apartaments-Lvov-otzyvy-1401537.jpg",
+                      "partner_hotel/facility/140/14015/1401537/Apart-otel-Centrum-Apartaments-Lvov-otzyvy-1401537.jpg"
+                    ],
+                    "checkIn": "13:00 - 22:00",
+                    "checkOut": "11:00 - 12:00",
+                    "url": "https://hotels24.ua/uk/Lviv/Mini-hotel-Centrum-Apartaments-15599.html",
+                    "shortDescription": "Апарт-готель \"Центрум Апартаментс\" розташований в історичній будівлі міста Львів, в 15 м від Палацу Потоцьких, в 750 м від Оперного театру та площі Ринок. До послуг гостей зручні, комфортні та просторі номери класу \"економ\", \"стандарт\" та \"сімейний\", з усім необхідним для…",
+                    "matchReasons": []
+                  }
+                ]
+              },
+              "ms": 37
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hotel_availability",
+      "turns": [
+        {
+          "prompt": "Перевір наявність у Центрум Апартаментс у Львові, 20–21 листопада, 2 дорослих. Контекст сторінки: hotel_id=15599.",
+          "answer": "Проверив доступність для заїзду 20.11.2026 — виїзд 21.11.2026 (1 ніч), 2 дорослих.\n\n- [Центрум Апартаментс](https://hotels24.ua/uk/Lviv/Mini-hotel-Centrum-Apartaments-15599.html) — апарт-готель у історичній будівлі, 15 м від Палацу Потоцьких і ~750 м від Оперного театру/Площі Ринок; є безкоштовний Wi‑Fi та спільна кухня. Рейтинг: ~68.6/100.\n\nДоступні номери і ціни (UAH, за весь період):\n- Стандарт двомісний Нью Йорк — до 2 осіб — 1 150 UAH.\n- Стандарт двомісний Лондон — до 2 осіб — 1 150 UAH.\n- Стандарт двомісний Львів № 3 з санвузлом — до 2 осіб — 1 300 UAH.\n- Сімейний 4-місний № 4 з санвузлом — до 4 осіб — 1 700 UAH.\n\nНаявність і ціни можуть змінюватися — перед бронюванням рекомендую ще раз перевірити доступність на сторінці готелю (посилання вище). Якщо хочете, можу повторно перевірити або підказати, який номер краще забронювати.",
+          "ms": 22601,
+          "tools": [
+            {
+              "name": "check_hotel_availability",
+              "args": {
+                "hotel_id": 15599,
+                "check_in": "2026-11-20",
+                "check_out": "2026-11-21",
+                "guests": 2
+              },
+              "result": {
+                "currency": "UAH",
+                "hotels": [
+                  {
+                    "hotelId": 15599,
+                    "checkIn": "2026-11-20",
+                    "checkOut": "2026-11-21",
+                    "ratingConversion": 133.6144578313253,
+                    "rooms": [
+                      {
+                        "blockId": 61024,
+                        "tariffId": "66d549bd60a08e3fba1ae597",
+                        "name": "Стандарт двомісний Нью Йорк",
+                        "maxOccupancy": 2,
+                        "totalPrice": 1150,
+                        "pricePerNight": 1150,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 61025,
+                        "tariffId": "66d54aa517229d6a0e618ead",
+                        "name": "Стандарт двомісний Лондон",
+                        "maxOccupancy": 2,
+                        "totalPrice": 1150,
+                        "pricePerNight": 1150,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 61022,
+                        "tariffId": "66d54940b9704d7b1a2048c1",
+                        "name": "Стандарт двомісний Львів № 3 з санвузлом",
+                        "maxOccupancy": 2,
+                        "totalPrice": 1300,
+                        "pricePerNight": 1300,
+                        "currency": "UAH",
+                        "facilities": []
+                      },
+                      {
+                        "blockId": 61023,
+                        "tariffId": "66d54978a8df1629b0573e3b",
+                        "name": "Сімейний 4-місний № 4 з санвузлом",
+                        "maxOccupancy": 4,
+                        "totalPrice": 1700,
+                        "pricePerNight": 1700,
+                        "currency": "UAH",
+                        "facilities": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              "ms": 47
+            },
+            {
+              "name": "get_hotel_details",
+              "args": {
+                "hotel_ids": [
+                  15599
+                ],
+                "language": "uk"
+              },
+              "result": {
+                "hotels": [
+                  {
+                    "id": 15599,
+                    "name": "Центрум Апартаментс",
+                    "landmarks": [
+                      {
+                        "type": "downtown",
+                        "name": "Площа ринок",
+                        "distanceMeters": 750
+                      },
+                      {
+                        "type": "sight",
+                        "name": "Палац Потоцьких",
+                        "distanceMeters": 15
+                      },
+                      {
+                        "type": "bus",
+                        "name": "Львів",
+                        "distanceMeters": 2700
+                      },
+                      {
+                        "type": "railway",
+                        "name": "Львів",
+                        "distanceMeters": 2700
+                      },
+                      {
+                        "type": "airport",
+                        "name": "Львів",
+                        "distanceMeters": 6500
+                      },
+                      {
+                        "type": "downtown",
+                        "name": "Оперний театр",
+                        "distanceMeters": 750
+                      }
+                    ],
+                    "cityId": 18389,
+                    "city": "Львів",
+                    "address": "Коперника, 20",
+                    "description": "Апарт-готель \"Центрум Апартаментс\" розташований в історичній будівлі міста Львів, в 15 м від Палацу Потоцьких, в 750 м від Оперного театру та площі Ринок. До послуг гостей зручні, комфортні та просторі номери класу \"економ\", \"стандарт\" та \"сімейний\", з усім необхідним для проживання. Спільний санвузол, розташований на поверсі. Деякі номери категорії \"стандарт\" та \"сімейний\" мають власну ванну кімнату. По всій території надається безкоштовний Wi-Fi. В апарт-готелі можна замовити сніданок та каву додатково повідомивши адміністратора. Відстань від апарт-готелю \"Центрум Апартаментс\" до залізничного та автовокзалу 2,7 км, до аеропорту 6,5 км.",
+                    "stars": 0,
+                    "rating": 68.6144578313253,
+                    "longitude": 24.026256815344233,
+                    "latitude": 49.838357940239135,
+                    "facilities": [
+                      "Інтернет",
+                      "Пральня",
+                      "Послуги по прасуванню одягу",
+                      "Щоденне прибирання номера",
+                      "Спільна кухня",
+                      "Холодильник",
+                      "Мікрохвильова піч",
+                      "Електричний чайник",
+                      "Кухонне приладдя",
+                      "Безконтактне заселення"
+                    ],
+                    "photos": [
+                      "partner_hotel/facility/140/14015/1401537/Apart-otel-Centrum-Apartaments-Lvov-otzyvy-1401537.jpg",
+                      "partner_hotel/facility/140/14015/1401537/Apart-otel-Centrum-Apartaments-Lvov-otzyvy-1401537.jpg"
+                    ],
+                    "checkIn": "13:00 - 22:00",
+                    "checkOut": "11:00 - 12:00",
+                    "url": "https://hotels24.ua/uk/Lviv/Mini-hotel-Centrum-Apartaments-15599.html",
+                    "shortDescription": "Апарт-готель \"Центрум Апартаментс\" розташований в історичній будівлі міста Львів, в 15 м від Палацу Потоцьких, в 750 м від Оперного театру та площі Ринок. До послуг гостей зручні, комфортні та просторі номери класу \"економ\", \"стандарт\" та \"сімейний\", з усім необхідним для…",
+                    "matchReasons": []
+                  }
+                ]
+              },
+              "ms": 39
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "simulated_upstream_failure",
+      "turns": [
+        {
+          "prompt": "Львів, 20–21 листопада, 2 дорослих, до 3000 грн за ніч. Знайди готель.",
+          "answer": "У мене тимчасова проблема з пошуком міста (сервер не відповідає). Підтвердіть, будь ласка, що шукати саме так, і я повторю спробу:\n\n- Місто: Львів\n- Дати: 20.11.2026 — 21.11.2026 (перевірив календар)\n- Гості: 2 дорослих\n- Бюджет: до 3000 UAH за ніч\n\nПідтвердити і повторити пошук?",
+          "ms": 7362,
+          "tools": [
+            {
+              "name": "resolve_destination",
+              "args": {
+                "query": "Львів",
+                "language": "uk"
+              },
+              "error": "Hotels API returned HTTP 503",
+              "ms": 0
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "site": {
+    "synthetic_only": true,
+    "initial_status": 200,
+    "checks": [
+      {
+        "name": "busy_snapshot",
+        "pass": true,
+        "status": 200
+      },
+      {
+        "name": "concurrent_post_rejected",
+        "pass": true,
+        "status": 409
+      },
+      {
+        "name": "first_post_completes",
+        "pass": true,
+        "status": 200,
+        "ms": 8244
+      },
+      {
+        "name": "history_and_unlock",
+        "pass": true,
+        "messages": 2
+      },
+      {
+        "name": "idempotent_replay",
+        "pass": true,
+        "status": 200,
+        "ms": 1546
+      },
+      {
+        "name": "no_duplicate_history",
+        "pass": true
+      }
+    ],
+    "answer": "Чудово — я готовий допомогти. Щоб знайти варіанти, мені обов’язково потрібні ці дані (коротко):\n\n1. Місто призначення (я розв’язую його через Hotels24).  \n2. Дата заїзду (check‑in) і виїзду (check‑out). Правило: заїзд — сьогодні або пізніше, виїзд — після заїзду. Якщо ви вкажете тільки день і місяць, я автоматично підставлю найближчий майбутній рік і скажу повні дати.  \n3. Загальна кількість гостей. (максимум 30)  \n4. Максимальний бюджет у гривнях (UAH).  \n5. Чи цей бюджет — за весь період чи за ніч (якщо ніч — напишіть “за ніч” / “per night”; для 1 ночі вказуйте budget_type = total).\n\nДодатково (необов’язково, але корисно):\n- Кількість зірок або мінімальний рейтинг.  \n- Пошук поруч із чимось (станція, аеропорт, центр, пляж тощо) — вкажіть тип та бажану відстань (наприклад: “поблизу залізничного вокзалу, в межах 3 км”).  \n- Чи виключати хостели.  \n- Інші побажання (безкоштовна парковка, сніданок, Wi‑Fi, тварини тощо).  \n- Скільки варіантів показати (до 5).\n\nЩе важливо: я не роблю бронювання і не прошу платіжних/особистих даних — після вибору я дам перевірене посилання Hotels24 для завершення броні.\n\nХочете надіслати всі дані тепер? Ви можете вставити їх у простому вигляді, наприклад:\nМісто: Київ; Заїзд: 15.12; Виїзд: 17.12; Гостей: 2; Бюджет: 4000 UAH за весь період; Поблизу: вокзал, 3 км; Виключати хостели: так."
+  },
+  "links": [
+    {
+      "url": "https://hotels24.ua/en/Lviv/Hotel-Helikon-545.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/en/Lviv/Hotel-Helikon-545.html"
+    },
+    {
+      "url": "https://hotels24.ua/en/Lviv/Hotel-Hotel18-6907.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/en/Lviv/Hotel-Hotel18-6907.html"
+    },
+    {
+      "url": "https://hotels24.ua/en/Lviv/Mini-hotel-Centrum-Apartaments-15599.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/en/Lviv/Mini-hotel-Centrum-Apartaments-15599.html"
+    },
+    {
+      "url": "https://hotels24.ua/en/Lviv/Mini-hotel-Fortuna-6771.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/en/Lviv/Mini-hotel-Fortuna-6771.html"
+    },
+    {
+      "url": "https://hotels24.ua/en/Lviv/Mini-hotel-Snuker-7189.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/en/Lviv/Mini-hotel-Snuker-7189.html"
+    },
+    {
+      "url": "https://hotels24.ua/en/Lviv/Mini-hotel-Tri-Koroni-16472.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/en/Lviv/Mini-hotel-Tri-Koroni-16472.html"
+    },
+    {
+      "url": "https://hotels24.ua/en/Odesa/Apartment-hotel-Menshikov-5444.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/en/Odesa/Apartment-hotel-Menshikov-5444.html"
+    },
+    {
+      "url": "https://hotels24.ua/en/Odesa/Hotel--10480.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/en/Odesa/Hotel--10480.html"
+    },
+    {
+      "url": "https://hotels24.ua/en/Odesa/Hotel-Blaz-4181.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/en/Odesa/Hotel-Blaz-4181.html"
+    },
+    {
+      "url": "https://hotels24.ua/en/Odesa/Hotel-Potemkinn-7352.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/en/Odesa/Hotel-Potemkinn-7352.html"
+    },
+    {
+      "url": "https://hotels24.ua/en/Odesa/Hotel-Wellotel-2786.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/en/Odesa/Hotel-Wellotel-2786.html"
+    },
+    {
+      "url": "https://hotels24.ua/uk/Kyiv/Guest-Court-Olzhycha-45-B-16895.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/uk/Kyiv/Guest-Court-Olzhycha-45-B-16895.html"
+    },
+    {
+      "url": "https://hotels24.ua/uk/Kyiv/Hotel-Time-6013.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/uk/Kyiv/Hotel-Time-6013.html"
+    },
+    {
+      "url": "https://hotels24.ua/uk/Kyiv/Hotel-Vydubychi-3046.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/uk/Kyiv/Hotel-Vydubychi-3046.html"
+    },
+    {
+      "url": "https://hotels24.ua/uk/Kyiv/Hotel-and-restaurant-complex-Terra-Nova-2221.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/uk/Kyiv/Hotel-and-restaurant-complex-Terra-Nova-2221.html"
+    },
+    {
+      "url": "https://hotels24.ua/uk/Kyiv/Mini-hotel-Bogdanov-Yar-1611.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/uk/Kyiv/Mini-hotel-Bogdanov-Yar-1611.html"
+    },
+    {
+      "url": "https://hotels24.ua/uk/Lviv/Apartment-Austrian-Apartment-with-two-bedrooms-VIP-5392.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/uk/Lviv/Apartment-Austrian-Apartment-with-two-bedrooms-VIP-5392.html"
+    },
+    {
+      "url": "https://hotels24.ua/uk/Lviv/Apartment-DeMar-Apart-Vakarchuka-16017.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/uk/Lviv/Apartment-DeMar-Apart-Vakarchuka-16017.html"
+    },
+    {
+      "url": "https://hotels24.ua/uk/Lviv/Mini-hotel-Centrum-Apartaments-15599.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/uk/Lviv/Mini-hotel-Centrum-Apartaments-15599.html"
+    },
+    {
+      "url": "https://hotels24.ua/uk/Lviv/Hostel-Coffee-Home-1309.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/uk/Lviv/Hostel-Coffee-Home-1309.html"
+    },
+    {
+      "url": "https://hotels24.ua/uk/Lviv/Hostel-Fortuna-17152.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/uk/Lviv/Hostel-Fortuna-17152.html"
+    },
+    {
+      "url": "https://hotels24.ua/uk/Lviv/Hostel-Leosphere-15894.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/uk/Lviv/Hostel-Leosphere-15894.html"
+    },
+    {
+      "url": "https://hotels24.ua/uk/Lviv/Hostel-Ostrov-9884.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/uk/Lviv/Hostel-Ostrov-9884.html"
+    },
+    {
+      "url": "https://hotels24.ua/uk/Lviv/Hotel-Pysanka-Hotel-SPA-4894.html",
+      "status": 200,
+      "final_url": "https://hotels24.ua/uk/Lviv/Hotel-Pysanka-Hotel-SPA-4894.html"
+    }
+  ],
+  "price_unit_confirmation": {
+    "hotel_id": 3046,
+    "block_id": 11917,
+    "price_type": 2,
+    "nightly_per_bed": 240,
+    "stay_per_bed": 480,
+    "guests": 2,
+    "expected_stay_for_all_guests": 960,
+    "shown_stay_for_all_guests": 480
+  }
+}

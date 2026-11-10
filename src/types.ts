@@ -12,6 +12,11 @@ export interface AvailabilityBlock {
   name?: string;
   maxOccupancy?: number;
   placesAvailable?: number;
+  priceBasis?: "bed" | "room";
+  pricedGuests?: number;
+  quantity?: number;
+  unitTotalPrice?: number;
+  unitPricePerNight?: number;
   totalPrice?: number;
   pricePerNight?: number;
   currency: string;
@@ -27,6 +32,9 @@ export interface HotelAvailability {
 }
 
 export interface HotelDetails {
+  propertyType?: string;
+  hotelTypeId?: number;
+  isHostel?: boolean;
   landmarks?: Array<{ type: string; name: string; distanceMeters: number }>;
   id: number;
   name?: string;
@@ -48,6 +56,9 @@ export interface HotelDetails {
 }
 
 export interface HotelSearchResult extends HotelDetails {
+  priceBasis?: "bed" | "room";
+  pricedGuests?: number;
+  quantity?: number;
   checkIn: string;
   checkOut: string;
   currency: string;

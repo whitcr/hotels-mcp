@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
 import { mkdtemp, readdir, readFile, writeFile, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { makeEvent, redactMessage, telemetrySchema } from "../src/logging/events.js";
 import { logConfig, parseInsertResult } from "../src/logging/bigquery.js";
@@ -29,18 +29,20 @@ it("validates paths and destination identifiers", () => {
 });
 
 it("autodetects a key, uses tracked defaults, and respects explicit overrides", () => {
-  const paths = { cwd: "/app", home: "/home/service", hasFile: (file: string) => file === "/app/secrets/bigquery.json" };
+  const cwd = resolve("/app"), home = resolve("/home/service");
+  const localKey = resolve(cwd,"secrets/bigquery.json");
+  const paths = { cwd, home, hasFile: (file: string) => file === localKey };
   const config = logConfig({ NODE_ENV: "production" }, paths)!;
   assert.equal(config.project, "map-hotels");
-  assert.equal(config.credentialsFile, "/app/secrets/bigquery.json");
-  assert.equal(config.directory, "/home/service/.local/state/hotels24-chat/queue");
+  assert.equal(config.credentialsFile, localKey);
+  assert.equal(config.directory, resolve(home,".local/state/hotels24-chat/queue"));
   assert.equal(config.environment, "prod");
   assert.equal(logConfig({ CHAT_LOG_ENABLED: "false" }, paths), undefined);
   assert.equal(logConfig({}, { ...paths, hasFile: () => false }), undefined);
   assert.equal(logConfig({}, { ...paths, hasFile: (file) => file === "/app/config/google-service-account.json" }), undefined);
-  assert.equal(logConfig({}, { ...paths, hasFile: () => true })?.credentialsFile, "/app/secrets/bigquery.json");
+  assert.equal(logConfig({}, { ...paths, hasFile: () => true })?.credentialsFile, localKey);
   assert.equal(logConfig({}, { ...paths, hasFile: (file) => file.startsWith("/etc/") })?.credentialsFile, "/etc/hotels24-chat/bigquery.json");
-  assert.equal(logConfig({ GOOGLE_APPLICATION_CREDENTIALS: "/override.json" }, paths)?.credentialsFile, "/override.json");
+  assert.equal(logConfig({ GOOGLE_APPLICATION_CREDENTIALS: "/override.json" }, paths)?.credentialsFile, resolve(cwd,"/override.json"));
   assert.equal(logConfig({ CHAT_LOG_ENABLED: "true" }, { ...paths, hasFile: () => false })?.credentialsFile, undefined);
   assert.throws(() => logConfig({ CHAT_LOG_ENABLED: "yes" }, paths), /CHAT_LOG_ENABLED/);
 });

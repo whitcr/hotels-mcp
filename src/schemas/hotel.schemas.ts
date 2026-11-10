@@ -1,7 +1,10 @@
 import { z } from "zod";
 
 export const languageSchema = z.enum(["uk", "ru", "en"]).default("uk");
-export const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD");
+export const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD").refine((value) => {
+  const timestamp = Date.parse(`${value}T00:00:00.000Z`);
+  return !value.startsWith("0000") && Number.isFinite(timestamp) && new Date(timestamp).toISOString().slice(0, 10) === value;
+}, "Invalid calendar date");
 export const idArraySchema = z.array(z.number().int().positive()).min(1).max(50);
 
 export const resolveDestinationInput = {
@@ -58,6 +61,11 @@ const roomOutput = z.object({
   name: z.string().optional(),
   maxOccupancy: z.number().optional(),
   placesAvailable: z.number().optional(),
+  priceBasis: z.enum(["bed", "room"]).optional(),
+  pricedGuests: z.number().int().positive().optional(),
+  quantity: z.number().int().positive().optional(),
+  unitTotalPrice: z.number().positive().optional(),
+  unitPricePerNight: z.number().positive().optional(),
   totalPrice: z.number().optional(),
   pricePerNight: z.number().optional(),
   currency: z.string(),
@@ -65,6 +73,9 @@ const roomOutput = z.object({
 });
 
 const hotelDetailsOutput = z.object({
+  hotelTypeId: z.number().int().positive().optional(),
+  propertyType: z.string().optional(),
+  isHostel: z.boolean().optional(),
   id: z.number().int(),
   name: z.string().optional(),
   cityId: z.number().int().optional(),
@@ -102,6 +113,9 @@ export const searchHotelsOutput = {
   result_count: z.number().int().nonnegative(),
   response_guidance: z.array(z.string()),
   hotels: z.array(hotelDetailsOutput.extend({
+    priceBasis: z.enum(["bed", "room"]).optional(),
+    pricedGuests: z.number().int().positive().optional(),
+    quantity: z.number().int().positive().optional(),
     checkIn: dateSchema,
     checkOut: dateSchema,
     currency: z.string(),

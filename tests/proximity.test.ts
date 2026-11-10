@@ -24,7 +24,7 @@ it("filters 17km/unknown/wrong landmark before limiting and does not choose only
   registerSearchHotels({registerTool: (_n: string,_c: unknown,fn: any) => callback=fn} as any, {
     maxResults:1,hotelPublicBaseUrl:"https://hotels24.ua",
     client:{
-      getAvailability:async()=>({result:[1,2,3,4].map(id=>({_id:id,block:[{block_id:id,block_price:id*100,min_price:{price:id*100,currency:"UAH"}}]}))}),
+      getAvailability:async()=>({result:[1,2,3,4].map(id=>({_id:id,block:[{block_id:id,price_type:1,block_price:id*100,min_price:{price:id*100,currency:"UAH"}}]}))}),
       getHotelDetails:async(ids:number[])=>ids.map(id=>({hotel_id:id,name:"Hotel "+id,tags:{geo:[
         {name:id===2?"downtown":"railway",distance:id===1?17000:id===3?null:2500,valueLang:{uk:"Головний"}},
       ]}})),

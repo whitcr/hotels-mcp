@@ -183,8 +183,8 @@ app.post("/chat", requireAllowedOrigin, rateLimit, requireAuth, async (request, 
   const startedAt = Date.now();
   await chatLogs?.enqueue(makeEvent(context, { event_type: "user_message", role: "user", message: telemetry?.message || message }));
   try {
-    const result = await hotelChat.respond(message, previousResponseId);
-    await chatLogs?.enqueue(makeEvent(context, {
+    const result = await hotelChat.respond(message, previousResponseId, telemetry?.language);
+    await chatLogs?.enqueue(makeEvent({...context, chat_language:result.language}, {
       event_type: "assistant_message", role: "assistant", message: result.message,
       response_ms: Date.now() - startedAt, model: config.openAiModel,
     }));

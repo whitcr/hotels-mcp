@@ -38,7 +38,7 @@ it("excludes previous hotels before candidate slicing and does not return them o
   registerSearchHotels({registerTool: (_name: string, _config: unknown, cb: any) => {callback=cb;}} as any, {
     maxResults: 1, hotelPublicBaseUrl:"https://hotels24.ua",
     client: {
-      getAvailability: async () => ({result:[1,2,3].map(id => ({_id:id, block:[{block_id:id, block_price:1000, min_price:{price:1000,currency:"UAH"}}]}))}),
+      getAvailability: async () => ({result:[1,2,3].map(id => ({_id:id, block:[{block_id:id, price_type:1, block_price:1000, min_price:{price:1000,currency:"UAH"}}]}))}),
       getHotelDetails: async (ids: number[]) => {detailsCalls.push(ids);return ids.map(id => ({hotel_id:id,name:'Hotel '+id,link_word:'/hotel/'+id}));},
     },
   } as any);
