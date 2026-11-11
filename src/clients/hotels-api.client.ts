@@ -20,6 +20,21 @@ export class HotelsApiClient {
     private readonly retries = 2,
   ) {}
 
+  async resolveOperatorId(token: string): Promise<number | null> {
+    if (token.length !== 32 || !/^[a-f0-9]{32}$/.test(token)) return null;
+    const payload = await this.get("/info/crmtoken/operator", { token });
+    const identity = payload && typeof payload === "object" && "data" in payload ? payload.data : payload;
+    if (!identity || typeof identity !== "object" || !("operator_id" in identity)) {
+      throw new HotelsApiError("Hotels API returned invalid operator identity");
+    }
+    const id = identity.operator_id;
+    if (id === null) return null;
+    if (typeof id !== "number" || !Number.isSafeInteger(id) || id <= 0) {
+      throw new HotelsApiError("Hotels API returned invalid operator identity");
+    }
+    return id;
+  }
+
   resolveDestination(query: string, language: string): Promise<unknown> {
     return this.get("/search/hotel-city-region", { s: query, lang: language });
   }

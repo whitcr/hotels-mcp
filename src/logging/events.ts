@@ -1,3 +1,4 @@
+import type { VisitorRole } from "./operator-role.js";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 
@@ -7,6 +8,7 @@ export const telemetrySchema = z.object({
   context: z.enum(["hotel", "search"]).optional(),
   environment: z.enum(["prod", "stage", "local"]).optional(),
   message: z.string().min(1).max(4000).optional(),
+  operator_token: z.string().length(32).regex(/^[a-f0-9]{32}$/i).optional(),
 });
 
 export interface ChatEvent {
@@ -16,7 +18,7 @@ export interface ChatEvent {
   request_id: string;
   environment: string;
   event_type: "user_message" | "assistant_message" | "error" | "integration_test";
-  role: "user" | "assistant" | null;
+  role: VisitorRole | "assistant" | null;
   message: string | null;
   chat_language: string | null;
   chat_context: string | null;

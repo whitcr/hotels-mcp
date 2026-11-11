@@ -1,3 +1,4 @@
+import { resolveVisitorRole, type VisitorRole } from "./logging/operator-role.js";
 import { ChatGenerationError } from "./chat/usage.js";
 import { randomUUID, timingSafeEqual } from "node:crypto";
 
@@ -139,6 +140,11 @@ async function callLocalTool(name: string, args: unknown): Promise<unknown> {
   return message.result?.structuredContent ?? message.result?.content;
 }
 
+// Operator identification uses existing service authentication, with a bounded
+// extra request. It is not exposed as a model tool and is never sent to OpenAI.
+const operatorApi = new HotelsApiClient(config.hotelsApiUrl, config.hotelsApiKey,
+  Math.min(config.requestTimeoutMs, 3000), config.hotelsApiHost, 0);
+
 const hotelChat = config.openAiApiKey
   ? new HotelChat(config.openAiApiKey, config.openAiModel, callLocalTool)
   : undefined;
@@ -175,6 +181,14 @@ app.post("/chat", requireAllowedOrigin, rateLimit, requireAuth, async (request, 
   }
   const parsedTelemetry = telemetrySchema.safeParse(request.body?.telemetry);
   const telemetry = parsedTelemetry.success ? parsedTelemetry.data : undefined;
+  let visitorRole: VisitorRole;
+  try {
+    visitorRole = await resolveVisitorRole(telemetry?.operator_token, token => operatorApi.resolveOperatorId(token));
+  } catch {
+    console.warn(JSON.stringify({ event: "operator_verification_failed", request_id: response.locals.requestId }));
+    response.status(503).set("Retry-After", "5").json({ error: "operator_verification_unavailable", request_id: response.locals.requestId });
+    return;
+  }
   const chatId = telemetry?.chat_id || randomUUID();
   const context = {
     chat_id: chatId, request_id: response.locals.requestId as string,
@@ -182,7 +196,7 @@ app.post("/chat", requireAllowedOrigin, rateLimit, requireAuth, async (request, 
     chat_language: telemetry?.language || null, chat_context: telemetry?.context || null,
   };
   const startedAt = Date.now();
-  await chatLogs?.enqueue(makeEvent(context, { event_type: "user_message", role: "user", message: telemetry?.message || message }));
+  await chatLogs?.enqueue(makeEvent(context, { event_type: "user_message", role: visitorRole, message: telemetry?.message || message }));
   try {
     const { usage, ...result } = await hotelChat.respond(message, previousResponseId, telemetry?.language);
     await chatLogs?.enqueue(makeEvent({...context, chat_language:result.language}, {
