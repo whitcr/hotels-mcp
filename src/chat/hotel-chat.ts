@@ -1,7 +1,9 @@
 import OpenAI from "openai";
-import type { ResponseFunctionToolCall, Tool } from "openai/resources/responses/responses";
+import type { ResponseCreateParamsNonStreaming, ResponseFunctionToolCall, Tool } from "openai/resources/responses/responses";
 import { answerIssues, detectMessageLanguage, formatAnswerDates, languageNames, validLanguage, type ChatLanguage } from "./language.js";
 import { collectHotelLinks, normalizeHotelLinks } from "./verified-links.js";
+
+import { ChatGenerationError, UsageAccumulator, type ChatUsage } from "./usage.js";
 
 function instructions(language: ChatLanguage): string {
   const today = new Date().toISOString().slice(0, 10);
@@ -141,6 +143,7 @@ export interface ChatResult {
   response_id: string;
   message: string;
   language: ChatLanguage;
+  usage: ChatUsage;
 }
 
 export class HotelChat {
@@ -153,6 +156,20 @@ export class HotelChat {
   }
 
   async respond(message: string, previousResponseId?: string, languageHint?: ChatLanguage): Promise<ChatResult> {
+    const usage = new UsageAccumulator();
+    try {
+      return await this.respondWithUsage(message, previousResponseId, languageHint, usage);
+    } catch (error) {
+      throw new ChatGenerationError(error, usage.snapshot());
+    }
+  }
+
+  private async respondWithUsage(message: string, previousResponseId: string | undefined, languageHint: ChatLanguage | undefined, usage: UsageAccumulator): Promise<ChatResult> {
+    const createResponse = async (params: ResponseCreateParamsNonStreaming) => {
+      const response = await this.client.responses.create(params);
+      usage.add(response.usage);
+      return response;
+    };
     let language = detectMessageLanguage(message);
     if (!language && previousResponseId) {
       language = this.languages.get(previousResponseId);
@@ -167,7 +184,7 @@ export class HotelChat {
     const policy = instructions(language);
     const metadata = {chat_language: language};
     const links = new Map(previousResponseId ? this.references.get(previousResponseId) : undefined);
-    let response = await this.client.responses.create({
+    let response = await createResponse({
       model: this.model,
       instructions: policy,
       metadata,
@@ -184,7 +201,7 @@ export class HotelChat {
         const issues = answerIssues(linked.text, language);
         if (linked.unverified) issues.push("Remove recommendations or links whose URLs have not been verified. Use only the exact verified URLs in this list: " + JSON.stringify([...links.values()]));
         if (issues.length) {
-          response = await this.client.responses.create({
+          response = await createResponse({
             model: this.model, instructions: policy, metadata,
             previous_response_id: response.id,
             input: [{role:"developer",content:`Correct your previous answer before it is shown to the customer: ${issues.join(" ")} Preserve verified facts, guest counts, prices and URLs. Do not run tools or add new claims.`}],
@@ -200,7 +217,7 @@ export class HotelChat {
           this.languages.delete(oldest);
           this.references.delete(oldest);
         }
-        return { response_id: response.id, message: formatAnswerDates(linked.text), language };
+        return { response_id: response.id, message: formatAnswerDates(linked.text), language, usage: usage.snapshot() };
       }
       const outputs = await Promise.all(calls.map(async (call) => {
         let output: unknown;
@@ -217,7 +234,7 @@ export class HotelChat {
         }
         return { type: "function_call_output" as const, call_id: call.call_id, output: JSON.stringify(output) };
       }));
-      response = await this.client.responses.create({
+      response = await createResponse({
         model: this.model,
         instructions: policy,
         metadata,

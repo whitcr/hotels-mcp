@@ -1,3 +1,4 @@
+import { ChatGenerationError } from "./chat/usage.js";
 import { randomUUID, timingSafeEqual } from "node:crypto";
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -183,15 +184,16 @@ app.post("/chat", requireAllowedOrigin, rateLimit, requireAuth, async (request, 
   const startedAt = Date.now();
   await chatLogs?.enqueue(makeEvent(context, { event_type: "user_message", role: "user", message: telemetry?.message || message }));
   try {
-    const result = await hotelChat.respond(message, previousResponseId, telemetry?.language);
+    const { usage, ...result } = await hotelChat.respond(message, previousResponseId, telemetry?.language);
     await chatLogs?.enqueue(makeEvent({...context, chat_language:result.language}, {
       event_type: "assistant_message", role: "assistant", message: result.message,
-      response_ms: Date.now() - startedAt, model: config.openAiModel,
+      response_ms: Date.now() - startedAt, model: config.openAiModel, ...usage,
     }));
     response.json({ ...result, chat_id: chatId });
   } catch (error) {
     await chatLogs?.enqueue(makeEvent(context, {
       event_type: "error", error_code: "chat_generation_failed", response_ms: Date.now() - startedAt,
+      ...(error instanceof ChatGenerationError ? error.usage : {}),
       model: config.openAiModel,
     }));
     next(error);

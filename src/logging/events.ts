@@ -40,7 +40,7 @@ export function redactMessage(text: string): string {
 
 export function makeEvent(
   context: Pick<ChatEvent, "chat_id" | "request_id" | "environment" | "chat_language" | "chat_context">,
-  fields: Pick<ChatEvent, "event_type"> & Partial<Pick<ChatEvent, "role" | "message" | "response_ms" | "error_code" | "model">>,
+  fields: Pick<ChatEvent, "event_type"> & Partial<Pick<ChatEvent, "role" | "message" | "response_ms" | "error_code" | "model" | "input_tokens" | "output_tokens">>,
 ): ChatEvent {
   return {
     ...context, event_id: randomUUID(), created_at: new Date().toISOString(),
