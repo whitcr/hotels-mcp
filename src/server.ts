@@ -162,6 +162,16 @@ app.get("/ready", (_request, response) => {
   });
 });
 
+// Server-to-server preflight for PHP session quota exemptions. No model/BQ calls.
+app.post("/chat/operator", requireAllowedOrigin, rateLimit, requireAuth, async (request, response) => {
+  try {
+    const role = await resolveVisitorRole(request.body?.operator_token, token => operatorApi.resolveOperatorId(token));
+    response.json({ is_operator: role !== "user" });
+  } catch {
+    response.status(503).set("Retry-After", "5").json({ error: "operator_verification_unavailable", request_id: response.locals.requestId });
+  }
+});
+
 app.post("/chat", requireAllowedOrigin, rateLimit, requireAuth, async (request, response, next) => {
   if (!hotelChat) {
     response.status(503).json({ error: "OPENAI_API_KEY is not configured", request_id: response.locals.requestId });
