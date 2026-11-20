@@ -9,7 +9,7 @@ it("sends updated policy every turn and rejects non-read-only tool calls", async
   const requests: any[] = [];
   let dispatched = 0;
   const chat = new HotelChat("test-key-not-real", "test-model", async () => { dispatched++; });
-  (chat as any).client = { responses: { create: async (request: any) => {
+  (chat as any).client = { responses: { retrieve: async () => ({metadata: {}}), create: async (request: any) => {
     requests.push(request);
     return requests.length === 1
       ? {id:"r1", output:[{type:"function_call", name:"create_booking", arguments:"{}", call_id:"c1"}]}

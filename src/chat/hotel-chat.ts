@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import type { ResponseCreateParamsNonStreaming, ResponseFunctionToolCall, Tool } from "openai/resources/responses/responses";
 import { answerIssues, detectMessageLanguage, formatAnswerDates, languageNames, validLanguage, type ChatLanguage } from "./language.js";
-import { collectHotelLinks, normalizeHotelLinks } from "./verified-links.js";
+import { collectHotelLinks, normalizeHotelLinks, readLinkStay, type LinkStay } from "./verified-links.js";
 
 import { ChatGenerationError, UsageAccumulator, type ChatUsage } from "./usage.js";
 
@@ -48,6 +48,7 @@ Customer-facing rules:
 
 When results are available, recommend at most five hotels. Render each hotel name as a Markdown link using its returned url. Add one or two factual sentences based only on returned descriptions, facilities, location, matchReasons, and live prices. Never claim a preference match without supporting returned data. Do not infer that a service is free, paid, included, guaranteed or available around the clock unless the returned data explicitly says that for that specific service. Example: "breakfast can be ordered" only supports "breakfast can be ordered", not "breakfast costs extra" or "breakfast is included". Omit numerical ratings unless the data explicitly identifies a customer-review scale; a raw ranking/conversion number is not a guest rating or a percent satisfaction score.
 For a factual answer about one selected hotel, put its verified Markdown-linked name at the start of the answer as well.
+Whenever the customer has specified a complete stay, include its current check_in/check_out in get_hotel_details calls too (ISO dates). Do not ask for dates just to answer a factual hotel question; omit both when unknown. Dates on hotel links are added by the server as dateArrival/dateDeparture in DD.MM.YYYY. After a date change use the full updated stay in a tool call before returning links; never reuse the previous stay.
 When asked to repeat a hotel link or discuss a hotel from an earlier turn, refresh its get_hotel_details before answering so its URL is verified again even after a process restart. Do not guess or edit any hotel slug.
 All totalPrice and pricePerNight values already cover ALL pricedGuests. Never multiply those values again. When priceBasis=bed, explicitly describe quantity beds in shared accommodation, not a private room; unitTotalPrice and unitPricePerNight are per bed and must not be presented as the group total. For room prices, state that the displayed amount covers the requested guests. For no-hostel requests, only recommend results with isHostel=false; this also excludes private rooms inside a hostel.
 Mention the total or nightly price clearly and say that availability and prices should be rechecked before booking. If no result matches the confirmed budget, say so and suggest changing one constraint. When a tool reports invalid or past dates, ask for valid future dates instead of retrying. Never expose tool internals, API keys, raw JSON, or internal errors.`;
@@ -108,13 +109,15 @@ const tools: Tool[] = [
   {
     type: "function",
     name: "get_hotel_details",
-    description: "Get normalized public details for selected hotels.",
+    description: "Get normalized public details for selected hotels. Include check_in and check_out together when the customer has supplied dates; omit both otherwise.",
     strict: false,
     parameters: {
       type: "object",
       additionalProperties: false,
       properties: {
         hotel_ids: { type: "array", minItems: 1, maxItems: 50, items: { type: "integer", minimum: 1 } },
+        check_in: { type: "string", description: "Current customer check-in, YYYY-MM-DD; optional, only with check_out." },
+        check_out: { type: "string", description: "Current customer check-out, YYYY-MM-DD; optional, only with check_in." },
         language: { type: "string", enum: ["uk", "ru", "en"] },
       },
       required: ["hotel_ids", "language"],
@@ -149,6 +152,7 @@ export interface ChatResult {
 export class HotelChat {
   private readonly client: OpenAI;
   private readonly languages = new Map<string, ChatLanguage>();
+  private readonly stays = new Map<string, LinkStay | undefined>();
   private readonly references = new Map<string, Map<number, string>>();
 
   constructor(apiKey: string, private readonly model: string, private readonly callTool: (name: string, args: unknown) => Promise<unknown>) {
@@ -171,23 +175,24 @@ export class HotelChat {
       return response;
     };
     let language = detectMessageLanguage(message);
-    if (!language && previousResponseId) {
-      language = this.languages.get(previousResponseId);
-      if (!language) {
-        // Persist only an enum in OpenAI metadata, so short replies survive a
-        // process restart without loading or storing customer text here.
+    let stay = previousResponseId ? this.stays.get(previousResponseId) : undefined;
+    if (previousResponseId) {
+      language ??= this.languages.get(previousResponseId);
+      if (!this.stays.has(previousResponseId) || !language) {
+        // Restore trip dates even when this message explicitly determines the language.
         const previous = await this.client.responses.retrieve(previousResponseId);
-        language = validLanguage(previous.metadata?.chat_language) ?? detectMessageLanguage(previous.output_text ?? "");
+        language ??= validLanguage(previous.metadata?.chat_language) ?? detectMessageLanguage(previous.output_text ?? "");
+        stay = readLinkStay(previous.metadata);
       }
     }
     language ??= validLanguage(languageHint) ?? "uk";
     const policy = instructions(language);
-    const metadata = {chat_language: language};
+    const metadata = (): Record<string, string> => ({ chat_language: language, ...(stay ?? {}) });
     const links = new Map(previousResponseId ? this.references.get(previousResponseId) : undefined);
     let response = await createResponse({
       model: this.model,
       instructions: policy,
-      metadata,
+      metadata: metadata(),
       input: message,
       previous_response_id: previousResponseId,
       tools,
@@ -197,25 +202,27 @@ export class HotelChat {
     for (let round = 0; round < 6; round += 1) {
       const calls = response.output.filter((item): item is ResponseFunctionToolCall => item.type === "function_call");
       if (!calls.length) {
-        let linked = normalizeHotelLinks(response.output_text, links);
+        let linked = normalizeHotelLinks(response.output_text, links, stay);
         const issues = answerIssues(linked.text, language);
         if (linked.unverified) issues.push("Remove recommendations or links whose URLs have not been verified. Use only the exact verified URLs in this list: " + JSON.stringify([...links.values()]));
         if (issues.length) {
           response = await createResponse({
-            model: this.model, instructions: policy, metadata,
+            model: this.model, instructions: policy, metadata: metadata(),
             previous_response_id: response.id,
             input: [{role:"developer",content:`Correct your previous answer before it is shown to the customer: ${issues.join(" ")} Preserve verified facts, guest counts, prices and URLs. Do not run tools or add new claims.`}],
             tools: [], tool_choice: "none",
           });
-          linked = normalizeHotelLinks(response.output_text, links);
+          linked = normalizeHotelLinks(response.output_text, links, stay);
           if (linked.unverified || answerIssues(linked.text, language).length) throw new Error("Hotel assistant response failed presentation validation");
         }
         this.languages.set(response.id, language);
         this.references.set(response.id, links);
+        this.stays.set(response.id, stay);
         if (this.languages.size > 2000) {
           const oldest = this.languages.keys().next().value!;
           this.languages.delete(oldest);
           this.references.delete(oldest);
+          this.stays.delete(oldest);
         }
         return { response_id: response.id, message: formatAnswerDates(linked.text), language, usage: usage.snapshot() };
       }
@@ -226,6 +233,13 @@ export class HotelChat {
             throw new Error("Only read-only hotel tools are permitted");
           }
           const args = JSON.parse(call.arguments);
+          if (["search_hotels", "check_hotel_availability", "get_hotel_details"].includes(call.name)
+              && ("check_in" in args || "check_out" in args)) {
+            stay = readLinkStay(args);
+            if (!stay) throw new Error("Provide a complete valid check_in/check_out range with departure after arrival.");
+          }
+          // Details dates are conversation context; the read-only MCP detail tool needs only IDs/language.
+          if (call.name === "get_hotel_details") { delete args.check_in; delete args.check_out; }
           if (call.name !== "check_hotel_availability") args.language = language;
           output = await this.callTool(call.name, args);
           collectHotelLinks(output, links);
@@ -237,7 +251,7 @@ export class HotelChat {
       response = await createResponse({
         model: this.model,
         instructions: policy,
-        metadata,
+        metadata: metadata(),
         previous_response_id: response.id,
         input: outputs,
         tools,
