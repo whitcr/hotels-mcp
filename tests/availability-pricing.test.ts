@@ -47,5 +47,5 @@ it("does not invent currency, price unit, or a usable positive price", () => {
 it("rounds group prices to currency precision and rejects invalid guest counts", () => {
   const result=mapAvailability(payload([{...bed,block_price:0.1,min_price:{price:0.1,currency:"UAH"}}]),3);
   assert.equal(result[0]!.rooms[0]!.totalPrice,0.3);
-  for(const guests of [0,-1,1.5,31,NaN])assert.throws(()=>mapAvailability(payload([bed]),guests));
+  for(const guests of [0,-1,1.5,61,NaN])assert.throws(()=>mapAvailability(payload([bed]),guests));
 });

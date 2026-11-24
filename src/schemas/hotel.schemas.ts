@@ -16,7 +16,8 @@ export const searchHotelsInput = {
   city_id: z.number().int().positive().describe("Resolved Hotels24 city ID. Resolve the customer's city before calling this tool."),
   check_in: dateSchema,
   check_out: dateSchema,
-  guests: z.number().int().min(1).max(30),
+  guests: z.number().int().min(1).max(60),
+  budget_min: z.number().nonnegative().optional(),
   budget_max: z.number().positive().describe("Maximum customer budget in UAH."),
   budget_type: z.enum(["total", "per_night"]).describe("Whether budget_max applies to the entire stay or one night."),
   budget_currency: z.literal("UAH").describe("The legacy API returns UAH. Ask the customer to confirm a UAH budget; do not convert implicitly."),
@@ -25,11 +26,16 @@ export const searchHotelsInput = {
   exclude_hostels: z.boolean().default(false),
   exclude_hotel_ids: z.array(z.number().int().positive()).max(50).default([]),
   proximity: z.object({
-    type: z.enum(["railway", "bus", "airport", "subway", "beach", "downtown", "lift"]),
+    type: z.enum(["railway", "bus", "airport", "subway", "beach", "downtown", "lift", "landmark", "map_point"]),
     max_distance_m: z.number().positive().max(100000).default(3000),
     name: z.string().trim().min(2).max(120).optional(),
+    point: z.object({
+      latitude: z.number().min(-90).max(90),
+      longitude: z.number().min(-180).max(180),
+    }).optional(),
   }).optional(),
   customer_request: z.string().trim().min(2).max(500).optional(),
+  pool_type: z.enum(["indoor", "outdoor", "either"]).optional(),
   preferences: z.array(z.string().trim().min(2).max(80)).max(15).default([]),
   language: languageSchema,
   limit: z.number().int().min(1).max(50).default(10),
@@ -44,7 +50,7 @@ export const checkAvailabilityInput = {
   hotel_id: z.number().int().positive(),
   check_in: dateSchema,
   check_out: dateSchema,
-  guests: z.number().int().min(1).max(30),
+  guests: z.number().int().min(1).max(60),
 };
 
 const destinationOutput = z.object({
@@ -56,6 +62,7 @@ const destinationOutput = z.object({
 });
 
 const roomOutput = z.object({
+  minNights: z.number().int().positive().optional(),
   blockId: z.number().int(),
   tariffId: z.string().optional(),
   name: z.string().optional(),
@@ -93,6 +100,8 @@ const hotelDetailsOutput = z.object({
   checkOut: z.string().optional(),
   url: z.string().url().optional(),
   matchReasons: z.array(z.string()),
+  poolTypes: z.array(z.enum(["indoor", "outdoor"])).optional(),
+  locationMatch: z.object({ name: z.string(), distanceMeters: z.number().nonnegative() }).optional(),
   landmarks: z.array(z.object({ type: z.string(), name: z.string(), distanceMeters: z.number().nonnegative() })).optional(),
 });
 
@@ -106,6 +115,7 @@ export const searchHotelsOutput = {
   check_out: dateSchema,
   customer_request: z.string().nullable(),
   budget: z.object({
+    min: z.number().nonnegative().optional(),
     max: z.number().positive(),
     type: z.enum(["total", "per_night"]),
     currency: z.literal("UAH"),
@@ -123,6 +133,8 @@ export const searchHotelsOutput = {
     pricePerNight: z.number().optional(),
     availableRooms: z.number().int().nonnegative(),
     rooms: z.array(roomOutput),
+    minimumStayNights: z.number().int().positive().optional(),
+    missingPreferences: z.array(z.string()).optional(),
     matchScore: z.number().int().nonnegative(),
   })),
 };
@@ -135,6 +147,7 @@ export const availabilityOutput = {
   currency: z.literal("UAH"),
   hotels: z.array(z.object({
     hotelId: z.number().int(),
+    minimumStayNights: z.number().int().positive().optional(),
     checkIn: z.string().optional(),
     checkOut: z.string().optional(),
     ratingConversion: z.number().optional(),

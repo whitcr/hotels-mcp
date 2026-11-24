@@ -73,6 +73,10 @@ export function mapHotelDetails(payload: unknown, language: string, publicBaseUr
       longitude: number(coordinates[0] ?? location?.longitude ?? record.longitude),
       latitude: number(coordinates[1] ?? location?.latitude ?? record.latitude),
       facilities: textList(record.facilities, language),
+      poolTypes: array(record.facilities).flatMap((item): Array<"indoor" | "outdoor"> => {
+        const id = number(object(item)?.id);
+        return id === 45 ? ["outdoor"] : id === 46 ? ["indoor"] : [];
+      }),
       photos,
       checkIn: string(record.checkIn ?? record.check_in ?? record.checkin_to),
       checkOut: string(record.checkOut ?? record.check_out ?? record.checkout_to),

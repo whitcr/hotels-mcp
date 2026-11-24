@@ -8,6 +8,7 @@ export interface Destination {
 
 export interface AvailabilityBlock {
   blockId: number;
+  minNights?: number;
   tariffId?: string;
   name?: string;
   maxOccupancy?: number;
@@ -47,6 +48,8 @@ export interface HotelDetails {
   latitude?: number;
   longitude?: number;
   facilities: string[];
+  poolTypes?: Array<"indoor" | "outdoor">;
+  locationMatch?: { name: string; distanceMeters: number };
   photos: string[];
   checkIn?: string;
   checkOut?: string;
@@ -67,4 +70,6 @@ export interface HotelSearchResult extends HotelDetails {
   availableRooms: number;
   rooms: AvailabilityBlock[];
   matchScore: number;
+  missingPreferences?: string[];
+  minimumStayNights?: number;
 }

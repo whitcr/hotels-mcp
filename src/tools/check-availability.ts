@@ -15,14 +15,22 @@ export function registerCheckAvailability(server: McpServer, { client }: ToolDep
     annotations: { readOnlyHint: true, openWorldHint: false },
   }, (args) => runTool(async () => {
     validateStayDates(args.check_in, args.check_out);
+    const nights = (Date.parse(args.check_out) - Date.parse(args.check_in)) / 86_400_000;
+    const group = args.guests >= 6;
+    const hotels = mapAvailability(await client.getAvailability({
+      hotelIds: [args.hotel_id],
+      checkIn: args.check_in,
+      checkOut: args.check_out,
+      guests: group ? 1 : args.guests,
+    }), args.guests, group);
     return {
       currency: "UAH",
-      hotels: mapAvailability(await client.getAvailability({
-        hotelIds: [args.hotel_id],
-        checkIn: args.check_in,
-        checkOut: args.check_out,
-        guests: args.guests,
-      }), args.guests),
+      hotels: hotels.flatMap(hotel => {
+        const rooms = hotel.rooms.filter(room => (room.minNights ?? 1) <= nights);
+        if (rooms.length) return [{ ...hotel, rooms }];
+        const minimumStayNights = Math.min(...hotel.rooms.map(room => room.minNights ?? Infinity));
+        return Number.isFinite(minimumStayNights) ? [{ ...hotel, rooms: [], minimumStayNights }] : [];
+      }),
     };
   }));
 }

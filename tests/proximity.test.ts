@@ -39,3 +39,15 @@ it("filters 17km/unknown/wrong landmark before limiting and does not choose only
   const omitted=await callback({...args,proximity:undefined,customer_request:"поруч з жд вокзалом"});
   assert.equal(omitted.isError,true);
 });
+
+it("matches a named landmark and measures a supplied map point using hotel coordinates", () => {
+  const [hotel] = mapHotelDetails([{hotel_id: 1, latitude: 50.01, longitude: 30,
+    tags: {geo: [{name: "place", distance: 450, valueLang: {uk: "Палац спорту"}}]}}], "uk", "https://hotels24.ua");
+  assert(hotel);
+  assert(matchesProximity(hotel, {type: "landmark", name: "Палац спорту", max_distance_m: 500}));
+  assert(!matchesProximity(hotel, {type: "landmark", name: "Інший палац", max_distance_m: 500}));
+  const point = {latitude: 50, longitude: 30};
+  assert(matchesProximity(hotel, {type: "map_point", point, max_distance_m: 1200}));
+  assert(!matchesProximity(hotel, {type: "map_point", point, max_distance_m: 1000}));
+  assert(!matchesProximity({...hotel, latitude: undefined}, {type: "map_point", point, max_distance_m: 1200}));
+});

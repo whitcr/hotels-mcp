@@ -35,7 +35,7 @@ export function collectHotelLinks(output: unknown, links: Map<number, string>): 
 
 export function normalizeHotelLinks(text: string, links: Map<number, string>, stay?: LinkStay): {text: string; unverified: boolean} {
   const datedLinks = new Map([...links].map(([id, url]) => [id, withStay(url, readLinkStay(stay))]));
-  const known = [...datedLinks.values()];
+  const known = [...datedLinks.values(), "https://hotels24.ua/uk/groups/"];
   let unverified = false;
   const normalized = text.replace(/https?:\/\/[^\s<>"\]]+/g, (full) => {
     // Match the original returned URL as well, including routes without a numeric hotel ID.
