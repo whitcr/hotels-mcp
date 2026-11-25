@@ -93,3 +93,11 @@ it("formats prose dates without changing verified Markdown or bare URLs", () => 
   const text=`2027-01-02 — 2027-01-03. Format YYYY-MM-DD. [Hotel](${url}) ${url}`;
   assert.equal(formatAnswerDates(text),`02.01.2027 — 03.01.2027. Format DD.MM.YYYY. [Hotel](${url}) ${url}`);
 });
+
+it("rejects hints that the hotel page may contain contacts, but allows saying that no contacts are published", () => {
+  assert(answerIssues("Можу показати сторінку готелю (на сторінці може бути контактна інформація, але я не гарантую).", "uk").length);
+  assert(answerIssues("На странице отеля можно найти телефон.", "ru").length);
+  assert(answerIssues("The hotel page may contain a phone number.", "en").length);
+  assert.deepEqual(answerIssues("Hotels24 не публікує прямі контакти готелів; я можу показати сторінку для бронювання.", "uk"), []);
+  assert.deepEqual(answerIssues("Hotels24 does not publish direct hotel contacts, so I cannot give a phone number.", "en"), []);
+});

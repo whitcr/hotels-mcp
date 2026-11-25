@@ -43,6 +43,13 @@ export function answerIssues(text: string, language: ChatLanguage): string[] {
     if(detected && detected!==language)issues.push(`Rewrite prose in ${languageNames[language]}; preserve verified proper names and URLs.`);
   }
   if(/\b(budget_type|budget_max|hotel_id|city_id|previous_response_id|priceBasis|pricedGuests|unitTotalPrice|max_distance_m|check_in|check_out|budget_currency|exclude_hostels)\b/i.test(visible) || /\bAPI\b/.test(visible) || (language!=="en" && /\b(proximity|downtown|railway|subway|total|per_night)\b/i.test(visible)))issues.push("Remove internal field names and technical error details; translate location and budget terms into ordinary customer language.");
+  // Hotels24 does not publish direct hotel contacts: never hint that the hotel page may contain them.
+  const contactHint = visible.split(/[.!?\n;]+/).some(sentence =>
+    /(?:сторінк|страниц|\bpage\b|\bsite\b|сайт)/i.test(sentence)
+    && /(?:може бути|можуть бути|може містити|можуть містити|можна знайти|можно найти|может быть|могут быть|может содержать|могут содержать|may (?:contain|include|have|list)|might (?:contain|include|have)|can find|could find|there (?:may|might) be)/i.test(sentence)
+    && /(?:контакт|телефон|phone|contact)/i.test(sentence)
+    && !/(?:не\s+(?:публікує|публикует)|does not publish|doesn['’]t publish)/i.test(sentence));
+  if(contactHint)issues.push("Do not say or hint that the hotel page may contain contact details or phone numbers. Say that Hotels24 does not publish direct hotel contacts and offer the verified booking page only as a booking page.");
   if(/(?:не\s+(?:зберігаю|зберігаємо|сохраняю|сохраняем)|(?:do not|don['’]t|never)\s+(?:store|save)\s+(?:your\s+)?(?:personal|messages|data))/iu.test(visible))issues.push("Do not claim messages or personal data are never stored. Ask the user not to send personal or payment data; if storage is asked about, describe logging with partial masking accurately.");
   return issues;
 }

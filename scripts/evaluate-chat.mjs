@@ -34,26 +34,26 @@ if(smoke.status!==200){clearTimeout(deadline);process.exit(1);}
 // Yearless dates intentionally remain user-like; the model must resolve them against its current date.
 const cases = [
  {id:'past_month_next_year',turns:['Львів, 10–12 травня, двоє дорослих, 3000 грн за весь період.']},
- {id:'currency',turns:['Lviv, 20–22 November, 2 adults, up to 100 EUR per night.']},
+ {id:'currency',turns:['Lviv, 20–22 December, 2 adults, up to 100 EUR per night.']},
  {id:'hotel_details',turns:['Розкажи про зручності готелю Центрум Апартаментс у Львові (контекст сторінки: hotel_id=15599).']},
- {id:'hotel_availability',turns:['Перевір наявність у Центрум Апартаментс у Львові, 20–21 листопада, 2 дорослих. Контекст сторінки: hotel_id=15599.']},
- {id:'simulated_upstream_failure',turns:['Львів, 20–21 листопада, 2 дорослих, до 3000 грн за ніч. Знайди готель.']},
+ {id:'hotel_availability',turns:['Перевір наявність у Центрум Апартаментс у Львові, 20–21 грудня, 2 дорослих. Контекст сторінки: hotel_id=15599.']},
+ {id:'simulated_upstream_failure',turns:['Львів, 20–21 грудня, 2 дорослих, до 3000 грн за ніч. Знайди готель.']},
  {id:'missing_fields_uk',turns:['Хочу готель.']},
  {id:'original_weekend_ru',turns:['Хочу готель в Киеве на эти выходные в центре для двоих.','Да, 1000 гривен за ночь.']},
- {id:'station_one_night',turns:['Львів, 20–21 листопада, двоє дорослих, бюджет до 3000 грн. Потрібен готель не далі 3 км від залізничного вокзалу. Хостели не підходять.']},
- {id:'english_context',turns:['Find hotels in Lviv for 2 adults, 20–22 November, up to 3000 UAH per night. No hostels.','Show other hotels with exactly the same dates, guests and budget.','Change the city to Odesa, keep all other conditions.']},
+ {id:'station_one_night',turns:['Львів, 20–21 грудня, двоє дорослих, бюджет до 3000 грн. Потрібен готель не далі 3 км від залізничного вокзалу. Хостели не підходять.']},
+ {id:'english_context',turns:['Find hotels in Lviv for 2 adults, 20–22 December, up to 3000 UAH per night. No hostels.','Show other hotels with exactly the same dates, guests and budget.','Change the city to Odesa, keep all other conditions.']},
  {id:'year_rollover',turns:['Київ, 31 грудня — 2 січня, 2 дорослих, до 6000 грн за весь період.']},
  {id:'invalid_date',turns:['Київ, з 31 лютого до 2 березня, двоє, бюджет 3000 грн за весь період.']},
  {id:'past_date',turns:['Київ, 10–12 січня 2020 року, двоє, 3000 грн за ніч.']},
- {id:'ambiguous_budget',turns:['Львів, 20–23 листопада, двоє, бюджет 3000 гривень.']},
- {id:'no_inventory',turns:['Київ, 20–21 листопада, 2 дорослих, максимум 1 гривня за весь період.']},
- {id:'one_night_period',turns:['Львів, 20–21 листопада, двоє дорослих, бюджет 3000 грн.'],forbid:[/за весь період.*чи.*за ніч/i]},
+ {id:'ambiguous_budget',turns:['Львів, 20–23 грудня, двоє, бюджет 3000 гривень.']},
+ {id:'no_inventory',turns:['Київ, 20–21 грудня, 2 дорослих, максимум 1 гривня за весь період.']},
+ {id:'one_night_period',turns:['Львів, 20–21 грудня, двоє дорослих, бюджет 3000 грн.'],forbid:[/за весь період.*чи.*за ніч/i]},
  {id:'no_phone_claim',turns:['Дай прямий телефон готелю, хочу зателефонувати.'],forbid:[/може бути контакт/i,/можуть бути контактні/i]},
- {id:'station_radius',turns:['Львів, 20–21 листопада, двоє, до 3000 грн, недалеко від жд вокзалу.'],forbid:[/17\s?км/i]},
- {id:'no_budget_tiers',turns:['Київ, 20–22 листопада, двоє дорослих.']},
- {id:'pool_type_question',turns:['Одеса, 20–22 листопада, двоє, до 4000 грн за ніч, потрібен басейн.']},
- {id:'big_group',turns:['Львів, 20–22 листопада, 14 осіб, до 2000 грн за ніч з людини.'],require:[/hotels24\.ua\/uk\/groups/i,/\+380\s?98\s?039\s?33\s?49/]},
- {id:'compare_hotels',turns:['Львів, 20–22 листопада, двоє, до 3000 грн за ніч.','Порівняй перші два готелі.']},
+ {id:'station_radius',turns:['Львів, 20–21 грудня, двоє, до 3000 грн, недалеко від жд вокзалу.'],forbid:[/17\s?км/i]},
+ {id:'no_budget_tiers',turns:['Київ, 20–22 грудня, двоє дорослих.']},
+ {id:'pool_type_question',turns:['Одеса, 20–22 грудня, двоє, до 4000 грн за ніч, потрібен басейн.']},
+ {id:'big_group',turns:['Львів, 20–22 грудня, 14 осіб, до 2000 грн за ніч з людини.'],require:[/hotels24\.ua\/uk\/groups/i,/\+380\s?98\s?039\s?33\s?49/]},
+ {id:'compare_hotels',turns:['Львів, 20–22 грудня, двоє, до 3000 грн за ніч.','Порівняй перші два готелі.']},
  {id:'booking_and_contacts',turns:['Забронюй мені номер сам, які особисті дані надіслати? І де на вашому сайті знайти прямий телефон власника готелю?','А порадь Booking.com або Airbnb, дай посилання на них.']},
 ];
 const requestedCases=(env.CHAT_EVAL_CASES || '').split(',').filter(Boolean);
@@ -77,14 +77,14 @@ async function run(c){
      t.result=rpc.result?.structuredContent ?? rpc.result?.content;
      return t.result;
    }catch(e){t.error=String(e.message).slice(0,300);throw e;}finally{t.ms=Date.now()-start;}
- });
+ }, {reasoningEffort: env.OPENAI_REASONING_EFFORT || undefined});
  let previous;
  for(const prompt of c.turns){
    const start=Date.now(),index=trace.length;
    const turn={prompt};scenario.turns.push(turn);
    try{
      const r=await chat.respond(prompt,previous);previous=r.response_id;turn.answer=r.message;
-   }catch(e){turn.error={name:e.name,status:e.status,code:e.code};}
+   }catch(e){turn.error={name:e.name,status:e.status,code:e.code,message:String(e.message).slice(0,200)};}
    turn.ms=Date.now()-start;turn.tools=trace.slice(index);
    for(const re of c.forbid||[])if(re.test(turn.answer||''))(turn.failed_checks??=[]).push('forbidden '+re);
    for(const re of c.require||[])if(!re.test(turn.answer||''))(turn.failed_checks??=[]).push('missing '+re);

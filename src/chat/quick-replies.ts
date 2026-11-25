@@ -1,4 +1,5 @@
-const replyMarker = /^[ \t]*QUICK_REPLIES[ \t]*:/im;
+// The hidden line normally starts a line, but a model may also glue it onto the end of a sentence.
+const replyMarker = /QUICK_REPLIES[ \t]*:/i;
 
 export function splitQuickReplies(output: string): { text: string; quickReplies: string[] } {
   const marker = replyMarker.exec(output);

@@ -1,5 +1,5 @@
 const MARKERS = ["QUICK_REPLIES:", "RECOMMENDED:"];
-const quickRepliesLine = /^[ \t]*(?:QUICK_REPLIES|RECOMMENDED)/im;
+const quickRepliesLine = /^[ \t]*RECOMMENDED|QUICK_REPLIES[ \t]*:/im;
 const openLink = /^\[[^\]\n]*(?:\](?:\([^)\s]*)?)?$/;
 const completeLink = /\[([^\]\n]+)\]\([^)\s]*\)/g;
 
@@ -42,6 +42,17 @@ export class DeltaFilter {
         while (start > 0 && /\s/.test(text[start - 1]!)) start -= 1;
         hold = Math.min(hold, start);
       }
+      // A marker may start anywhere in a line: never show a partial "QUICK_REPLIES:" at the end.
+      for (let length = Math.min(MARKERS[0]!.length - 1, text.length); length >= 1; length -= 1) {
+        if (MARKERS[0]!.startsWith(text.slice(-length).toUpperCase())) {
+          let start = text.length - length;
+          while (start > 0 && /\s/.test(text[start - 1]!)) start -= 1;
+          hold = Math.min(hold, start);
+          break;
+        }
+      }
+      // A lone trailing "*" may be half of a "**" bold marker that arrives in the next chunk.
+      if (text.endsWith("*")) hold = Math.min(hold, text.length - 1);
       const open = text.lastIndexOf("[");
       if (open >= 0 && open < hold && text.length - open < 400 && openLink.test(text.slice(open))) hold = open;
     }
@@ -51,5 +62,5 @@ export class DeltaFilter {
 }
 
 function labels(text: string): string {
-  return text.replace(completeLink, "$1");
+  return text.replace(completeLink, "$1").replace(/\*\*/g, "");
 }

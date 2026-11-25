@@ -51,3 +51,30 @@ describe("card summaries and a text without a hotel list", () => {
     assert.equal(result.hotel_cards.length, 2);
   });
 });
+
+describe("guards that do not depend on the model", () => {
+  const dates = (guests: number) => ({ id: "t", output: [{ type: "function_call", name: "search_hotels", arguments: JSON.stringify({ check_in: "2026-12-09", check_out: "2026-12-10", guests }), call_id: "c" }] });
+  const make = (guests: number, answers: string[]) => {
+    const chat = new HotelChat("k", "m", async () => ({ result_count: 1, hotels: [{ id: 5, name: "Alpha", url: "https://hotels24.ua/uk/Hotel-5.html" }] }));
+    const queue = [dates(guests), ...answers.map((text, index) => ({ id: "r" + index, output: [], output_text: text }))];
+    (chat as any).client = { responses: { retrieve: async () => ({ metadata: {} }), create: async () => queue.shift() } };
+    return chat;
+  };
+
+  it("always offers the group form and the call center for 10 or more guests", async () => {
+    const result = await make(12, ["Here are some options."]).respond("Find hotels for 12", undefined, "uk");
+    assert(result.message.includes("https://hotels24.ua/uk/groups/") && result.message.includes("+380 98 039 33 49"));
+    assert.equal(result.handoff?.phone, "+380 98 039 33 49");
+    const small = await make(4, ["Here are some options."]).respond("Find hotels for 4", undefined, "uk");
+    assert(!small.message.includes("groups"));
+    const told = await make(12, ["Use the form https://hotels24.ua/uk/groups/ please."]).respond("Find hotels for 12", undefined, "en");
+    assert.equal(told.message.split("hotels24.ua/uk/groups").length - 1, 1, "not repeated when the model already gave it");
+  });
+
+  it("drops an unverified link instead of failing the whole turn", async () => {
+    const bad = "Try [Fake Hotel](https://hotels24.ua/uk/Fake-99999.html) or see https://evil.example/x for more.";
+    const result = await make(2, [bad, bad]).respond("Find hotels", undefined, "en");
+    assert(!result.message.includes("evil.example") && !result.message.includes("Fake-99999"));
+    assert(result.message.includes("Fake Hotel"));
+  });
+});

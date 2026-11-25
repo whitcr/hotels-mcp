@@ -1,7 +1,8 @@
 import OpenAI from "openai";
+import type { ReasoningEffort } from "../config.js";
 import type { Response as ModelResponse, ResponseCreateParamsNonStreaming, ResponseFunctionToolCall, Tool } from "openai/resources/responses/responses";
 import { answerIssues, detectMessageLanguage, formatAnswerDates, languageNames, validLanguage, type ChatLanguage } from "./language.js";
-import { cardsForAnswer, cardsForIds, collectHotelCards, collectHotelLinks, normalizeHotelLinks, readLinkStay, type HotelCard, type LinkStay } from "./verified-links.js";
+import { cardsForAnswer, cardsForIds, collectHotelCards, collectHotelLinks, normalizeHotelLinks, readLinkStay, stripUnverifiedLinks, type HotelCard, type LinkStay } from "./verified-links.js";
 
 import { todayInKyiv } from "../today.js";
 import { splitQuickReplies } from "./quick-replies.js";
@@ -200,17 +201,37 @@ export const GROUP_FORM_URL = "https://hotels24.ua/uk/groups/";
 export const CALL_CENTER_PHONE = "+380 98 039 33 49";
 const GROUP_HANDOFF_GUESTS = 10;
 
+/** For large groups the official form and call center are always offered, whatever the model wrote. */
+function groupHelpLine(language: ChatLanguage): string {
+  if (language === "en") return `For a group of 10 or more it is easier to arrange accommodation through the Hotels24 group request form: ${GROUP_FORM_URL} or by calling the call center: ${CALL_CENTER_PHONE}.`;
+  if (language === "ru") return `Для группы от 10 человек удобнее подобрать размещение через форму групповых запросов Hotels24: ${GROUP_FORM_URL} или по телефону колл-центра: ${CALL_CENTER_PHONE}.`;
+  return `Для групи від 10 осіб зручніше підібрати розміщення через форму групових запитів Hotels24: ${GROUP_FORM_URL} або за телефоном колл-центру: ${CALL_CENTER_PHONE}.`;
+}
+
 /** Privacy-safe funnel facts about one turn; never contains message text. */
 export interface ChatAnalytics {
   kind: "search_result" | "hotels_shown";
   detail: Record<string, string | number | boolean | number[]>;
 }
 
+/** What the assistant is doing while the customer waits; the widget shows a caption for each. */
+export type ChatPhase = "resolving" | "searching" | "details" | "availability" | "writing";
+
+function phaseFor(toolNames: string[]): ChatPhase {
+  if (toolNames.includes("search_hotels")) return "searching";
+  if (toolNames.includes("check_hotel_availability")) return "availability";
+  if (toolNames.includes("get_hotel_details")) return "details";
+  return "resolving";
+}
+
+/** The widget shows plain text and links only: bold markers would appear as stray asterisks. */
+const withoutBold = (text: string) => text.replace(/\*\*([^*\n]+)\*\*/g, "$1");
+
 /** Optional live progress for streaming transports. Failures here never affect the chat. */
 export interface ChatStreamHooks {
   onDelta?: (text: string) => void;
   /** A tool round started: anything streamed so far was only a preamble. */
-  onStatus?: (phase: "searching") => void;
+  onStatus?: (phase: ChatPhase) => void;
 }
 
 export interface ChatResult {
@@ -223,6 +244,8 @@ export interface ChatResult {
   /** Set when a person should take over: large groups, with the official form and call center. */
   handoff: { reason: "large_group"; form_url: string; phone: string } | null;
   analytics: ChatAnalytics[];
+  /** Internal diagnostics only; the server logs it and never sends it to the browser. */
+  timing: { model_ms: number[]; tools: Array<{ name: string; ms: number }> };
 }
 
 export class HotelChat {
@@ -231,7 +254,15 @@ export class HotelChat {
   private readonly stays = new Map<string, LinkStay | undefined>();
   private readonly references = new Map<string, Map<number, string>>();
 
-  constructor(apiKey: string, private readonly model: string, private readonly callTool: (name: string, args: unknown) => Promise<unknown>) {
+  /** Set when the model rejected the configured reasoning depth: from then on it is simply not sent. */
+  private reasoningDisabled = false;
+
+  constructor(
+    apiKey: string,
+    private readonly model: string,
+    private readonly callTool: (name: string, args: unknown) => Promise<unknown>,
+    private readonly options: { reasoningEffort?: ReasoningEffort } = {},
+  ) {
     this.client = new OpenAI({ apiKey });
   }
 
@@ -246,7 +277,11 @@ export class HotelChat {
 
   private async respondWithUsage(message: string, previousResponseId: string | undefined, languageHint: ChatLanguage | undefined, usage: UsageAccumulator, hooks?: ChatStreamHooks, cardsMode = false): Promise<ChatResult> {
     const safely = (action: () => void) => { try { action(); } catch { /* A closed client must not abort the answer. */ } };
-    const createResponse = async (params: ResponseCreateParamsNonStreaming, live = false) => {
+    const timing: ChatResult["timing"] = { model_ms: [], tools: [] };
+    const send = async (input: ResponseCreateParamsNonStreaming, live: boolean) => {
+      const effort = this.reasoningDisabled ? undefined : this.options.reasoningEffort;
+      const params: ResponseCreateParamsNonStreaming = effort ? { ...input, reasoning: { effort: effort as NonNullable<ResponseCreateParamsNonStreaming["reasoning"]>["effort"] } } : input;
+      const startedModel = Date.now();
       let response: ModelResponse;
       if (live && hooks?.onDelta) {
         const filter = new DeltaFilter();
@@ -261,8 +296,23 @@ export class HotelChat {
       } else {
         response = await this.client.responses.create(params);
       }
+      timing.model_ms.push(Date.now() - startedModel);
       usage.add(response.usage);
       return response;
+    };
+    const createResponse = async (input: ResponseCreateParamsNonStreaming, live = false) => {
+      try {
+        return await send(input, live);
+      } catch (error) {
+        // A model may not accept the configured reasoning depth (e.g. "minimal" on gpt-6): send without it from now on.
+        const status = (error as { status?: number }).status;
+        if (!this.reasoningDisabled && this.options.reasoningEffort && status === 400 && /reasoning|effort|unsupported value/i.test(`${error instanceof Error ? error.message : ""} ${(error as { param?: string }).param ?? ""}`)) {
+          this.reasoningDisabled = true;
+          console.warn(JSON.stringify({ event: "reasoning_effort_unsupported", model: this.model, effort: this.options.reasoningEffort }));
+          return await send(input, live);
+        }
+        throw error;
+      }
     };
     let language = detectMessageLanguage(message);
     let stay = previousResponseId ? this.stays.get(previousResponseId) : undefined;
@@ -320,6 +370,10 @@ export class HotelChat {
           answer = splitQuickReplies(response.output_text);
           recommended = splitRecommended(answer.text);
           linked = normalizeHotelLinks(recommended.text, links, stay);
+          // An unverified link is not worth failing the whole turn: keep the words, drop the link.
+          if (linked.unverified && !answerIssues(linked.text, language).length) {
+            linked = { text: stripUnverifiedLinks(linked.text, links, stay), unverified: false };
+          }
           if (!linked.text.trim() || linked.unverified || answerIssues(linked.text, language).length) throw new Error("Hotel assistant response failed presentation validation");
         }
         this.languages.set(response.id, language);
@@ -337,13 +391,14 @@ export class HotelChat {
         const handoff = largestGroup >= GROUP_HANDOFF_GUESTS || linked.text.includes(GROUP_FORM_URL)
           ? { reason: "large_group" as const, form_url: GROUP_FORM_URL, phone: CALL_CENTER_PHONE } : null;
         return {
-          response_id: response.id, message: formatAnswerDates(linked.text), quick_replies: answer.quickReplies, language,
-          usage: usage.snapshot(), hotel_cards: shown, handoff, analytics,
+          response_id: response.id, message: formatAnswerDates(withoutBold(largestGroup >= GROUP_HANDOFF_GUESTS && !linked.text.includes(GROUP_FORM_URL) ? `${linked.text}\n\n${groupHelpLine(language)}` : linked.text)), quick_replies: answer.quickReplies, language,
+          usage: usage.snapshot(), hotel_cards: shown, handoff, analytics, timing,
         };
       }
-      if (hooks?.onStatus) safely(() => hooks.onStatus!("searching"));
+      if (hooks?.onStatus) safely(() => hooks.onStatus!(phaseFor(calls.map(call => call.name))));
       const outputs = await Promise.all(calls.map(async (call) => {
         let output: unknown;
+        const startedTool = Date.now();
         try {
           if (!["resolve_destination", "search_hotels", "get_hotel_details", "check_hotel_availability"].includes(call.name)) {
             throw new Error("Only read-only hotel tools are permitted");
@@ -372,8 +427,10 @@ export class HotelChat {
         } catch (error) {
           output = { error: error instanceof Error ? error.message : "Tool call failed" };
         }
+        timing.tools.push({ name: call.name, ms: Date.now() - startedTool });
         return { type: "function_call_output" as const, call_id: call.call_id, output: JSON.stringify(cardsMode ? adaptGuidance(output) : output) };
       }));
+      if (hooks?.onStatus) safely(() => hooks.onStatus!("writing"));
       response = await createResponse({
         model: this.model,
         instructions: policy,

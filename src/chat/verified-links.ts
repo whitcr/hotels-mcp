@@ -157,3 +157,16 @@ export function cardsForAnswer(text: string, cards: Map<number, HotelCard>, stay
     .slice(0, 5)
     .map(entry => entry.card));
 }
+
+/**
+ * Last resort for an answer that still carries links nobody verified: keep the words, drop the links
+ * (a Markdown link keeps its label). Used instead of failing the whole turn.
+ */
+export function stripUnverifiedLinks(text: string, links: Map<number, string>, stay?: LinkStay): string {
+  const isVerified = (url: string) => !normalizeHotelLinks(url, links, stay).unverified;
+  return text
+    .replace(/\[([^\]\n]*)\]\((https?:\/\/[^\s)]+)\)/g, (match, label: string, url: string) => isVerified(url) ? match : label)
+    .replace(/https?:\/\/[^\s<>"\])]+/g, (url) => isVerified(url) ? url : "")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}

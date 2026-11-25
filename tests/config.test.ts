@@ -19,3 +19,16 @@ describe("configuration", () => {
     assert.equal(config.requestRetries, 2);
   });
 });
+
+it("answers fast by default and lets the reasoning depth be changed", () => {
+  assert.equal(loadConfig({}).openAiReasoningEffort, "minimal");
+  assert.equal(loadConfig({ OPENAI_REASONING_EFFORT: "medium" }).openAiReasoningEffort, "medium");
+  assert.equal(loadConfig({ OPENAI_REASONING_EFFORT: "nonsense" }).openAiReasoningEffort, "minimal");
+  assert.equal(loadConfig({ OPENAI_REASONING_EFFORT: "none" }).openAiReasoningEffort, "none");
+});
+
+it("picks the fastest reasoning depth the chosen model accepts", () => {
+  assert.equal(loadConfig({}).openAiReasoningEffort, "minimal");
+  assert.equal(loadConfig({ OPENAI_MODEL: "gpt-6-luna" }).openAiReasoningEffort, "low");
+  assert.equal(loadConfig({ OPENAI_MODEL: "gpt-6-luna", OPENAI_REASONING_EFFORT: "none" }).openAiReasoningEffort, "none");
+});

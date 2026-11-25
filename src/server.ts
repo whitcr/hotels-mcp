@@ -159,7 +159,7 @@ const operatorApi = new HotelsApiClient(config.hotelsApiUrl, config.hotelsApiKey
   Math.min(config.requestTimeoutMs, 3000), config.hotelsApiHost, 0);
 
 const hotelChat = config.openAiApiKey
-  ? new HotelChat(config.openAiApiKey, config.openAiModel, callLocalTool)
+  ? new HotelChat(config.openAiApiKey, config.openAiModel, callLocalTool, { reasoningEffort: config.openAiReasoningEffort })
   : undefined;
 
 app.get("/health", (_request, response) => {
@@ -234,9 +234,11 @@ const chatRoute = (streaming: boolean) => async (request: Request, response: Res
     response.on("close", () => clearInterval(keepAlive));
   }
   try {
-    const { usage, analytics, ...result } = await hotelChat.respond(message, previousResponseId, telemetry?.language,
+    const { usage, analytics, timing, ...result } = await hotelChat.respond(message, previousResponseId, telemetry?.language,
       streaming ? { onDelta: text => send("delta", { text }), onStatus: phase => send("status", { phase }) } : undefined,
       { cards: telemetry?.cards === true });
+    // Where the time goes: model rounds and tool calls (no message text).
+    console.log(JSON.stringify({ event: "chat_timing", request_id: response.locals.requestId, total_ms: Date.now() - startedAt, ...timing }));
     for (const item of analytics) {
       await chatLogs?.enqueue(makeEvent({ ...context, chat_language: result.language }, {
         event_type: item.kind, role: "assistant", message: JSON.stringify(item.detail),

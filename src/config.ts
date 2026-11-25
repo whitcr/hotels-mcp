@@ -1,3 +1,12 @@
+/** "none" and "minimal" are the fastest; which one a model accepts depends on the model (gpt-5-mini: minimal, gpt-6-luna: none). */
+export const REASONING_EFFORTS = ["none", "minimal", "low", "medium", "high"] as const;
+export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
+
+/** The fastest depth each model family accepts: gpt-6 models have no "minimal", gpt-5 models have no "none". */
+export function defaultReasoningEffort(model: string): ReasoningEffort {
+  return /^gpt-6/i.test(model) ? "low" : "minimal";
+}
+
 export interface Config {
   port: number;
   nodeEnv: string;
@@ -14,6 +23,8 @@ export interface Config {
   rateLimitMaxRequests: number;
   openAiApiKey?: string;
   openAiModel: string;
+  /** Reasoning depth of the model; lower is faster. "minimal" cuts a typical answer from ~30 s to ~10 s (checked on the scenario suite); set OPENAI_REASONING_EFFORT=medium to go back to the old behaviour. */
+  openAiReasoningEffort?: ReasoningEffort;
 }
 
 function positiveInteger(value: string | undefined, fallback: number): number {
@@ -23,6 +34,7 @@ function positiveInteger(value: string | undefined, fallback: number): number {
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const nodeEnv = env.NODE_ENV ?? "development";
+  const openAiModel = env.OPENAI_MODEL || "gpt-5-mini";
   const config = {
     port: positiveInteger(env.PORT, 3000),
     nodeEnv,
@@ -38,7 +50,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     rateLimitWindowMs: positiveInteger(env.MCP_RATE_LIMIT_WINDOW_MS, 60_000),
     rateLimitMaxRequests: positiveInteger(env.MCP_RATE_LIMIT_MAX_REQUESTS, 120),
     openAiApiKey: env.OPENAI_API_KEY || undefined,
-    openAiModel: env.OPENAI_MODEL || "gpt-5-mini",
+    openAiModel,
+    openAiReasoningEffort: (REASONING_EFFORTS).find(value => value === env.OPENAI_REASONING_EFFORT) ?? defaultReasoningEffort(openAiModel),
   };
 
   const urlsToValidate: Array<[string, string]> = [
