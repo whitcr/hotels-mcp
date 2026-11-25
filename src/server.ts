@@ -21,6 +21,11 @@ console.log(JSON.stringify({ level: "info", event: "chat_logging", enabled: Bool
 chatLogs?.start();
 const app = express();
 app.disable("x-powered-by");
+// The service sits behind one reverse proxy (nginx); take the client IP from it.
+app.set("trust proxy", 1);
+// Proves a request came from this process (HotelChat -> local /mcp), so internal
+// tool calls do not drain the per-client rate limit of real visitors.
+const internalCallKey = randomUUID();
 app.use(express.json({ limit: "1mb" }));
 
 interface RateBucket {
@@ -63,6 +68,9 @@ function requireAllowedOrigin(request: Request, response: Response, next: NextFu
 }
 
 function rateLimit(request: Request, response: Response, next: NextFunction): void {
+  const internal = Buffer.from(request.header("x-internal-call") ?? "");
+  const expectedKey = Buffer.from(internalCallKey);
+  if (internal.length === expectedKey.length && timingSafeEqual(internal, expectedKey)) return next();
   const now = Date.now();
   const key = request.ip || request.socket.remoteAddress || "unknown";
   const current = rateBuckets.get(key);
@@ -118,6 +126,7 @@ async function callLocalTool(name: string, args: unknown): Promise<unknown> {
     headers: {
       authorization: `Bearer ${config.mcpAuthToken ?? ""}`,
       "content-type": "application/json",
+      "x-internal-call": internalCallKey,
       accept: "application/json, text/event-stream",
     },
     body: JSON.stringify({

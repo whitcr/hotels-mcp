@@ -1,6 +1,7 @@
 import { dateSchema } from "../schemas/hotel.schemas.js";
+import { todayInKyiv } from "../today.js";
 
-export function validateStayDates(checkIn: string, checkOut: string, today = new Date().toISOString().slice(0, 10)): void {
+export function validateStayDates(checkIn: string, checkOut: string, today = todayInKyiv()): void {
   dateSchema.parse(checkIn);
   dateSchema.parse(checkOut);
   if (checkIn >= checkOut) throw new Error("check_out must be after check_in");

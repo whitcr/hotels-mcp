@@ -42,7 +42,7 @@ export function answerIssues(text: string, language: ChatLanguage): string[] {
     const detected=detectMessageLanguage(visible.slice(0,220));
     if(detected && detected!==language)issues.push(`Rewrite prose in ${languageNames[language]}; preserve verified proper names and URLs.`);
   }
-  if(/\b(proximity|budget_type|budget_max|hotel_id|city_id|previous_response_id|priceBasis|pricedGuests|unitTotalPrice|max_distance_m|check_in|check_out|budget_currency|exclude_hostels|API)\b/i.test(visible) || (language!=="en" && /\b(downtown|railway|subway|total|per_night)\b/i.test(visible)))issues.push("Remove internal field names and technical error details; translate location and budget terms into ordinary customer language.");
+  if(/\b(budget_type|budget_max|hotel_id|city_id|previous_response_id|priceBasis|pricedGuests|unitTotalPrice|max_distance_m|check_in|check_out|budget_currency|exclude_hostels)\b/i.test(visible) || /\bAPI\b/.test(visible) || (language!=="en" && /\b(proximity|downtown|railway|subway|total|per_night)\b/i.test(visible)))issues.push("Remove internal field names and technical error details; translate location and budget terms into ordinary customer language.");
   if(/(?:не\s+(?:зберігаю|зберігаємо|сохраняю|сохраняем)|(?:do not|don['’]t|never)\s+(?:store|save)\s+(?:your\s+)?(?:personal|messages|data))/iu.test(visible))issues.push("Do not claim messages or personal data are never stored. Ask the user not to send personal or payment data; if storage is asked about, describe logging with partial masking accurately.");
   return issues;
 }

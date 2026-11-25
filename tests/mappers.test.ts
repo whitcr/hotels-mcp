@@ -11,8 +11,8 @@ describe("legacy response mappers", () => {
       regions: [],
     }, "uk");
     assert.deepEqual(result, [
-      { id: 9, type: "hotel", name: "Готель", cityId: 2, regionId: undefined },
       { id: 2, type: "city", name: "Львів", cityId: undefined, regionId: undefined },
+      { id: 9, type: "hotel", name: "Готель", cityId: 2, regionId: undefined },
     ]);
   });
 

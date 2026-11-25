@@ -5,9 +5,11 @@ export function mapDestinations(payload: unknown, language: string): Destination
   const root = object(unwrap(payload));
   if (!root) return [];
   const sections: Array<[Destination["type"], unknown]> = [
-    ["hotel", root.hotels],
+    // Cities and regions first: callers truncate this list, and a city is what
+    // search_hotels needs. Hotel matches must not push it out.
     ["city", root.cities],
     ["region", root.regions],
+    ["hotel", root.hotels],
   ];
   return sections.flatMap(([type, items]) => array(items).flatMap((item) => {
     const record = object(item);

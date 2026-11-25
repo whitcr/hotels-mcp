@@ -19,11 +19,14 @@ export function findProximity(hotel: HotelDetails, proximity: Proximity) {
       : undefined;
   }
   if (proximity.type === "landmark" && !proximity.name) return undefined;
-  return hotel.landmarks?.find(place =>
-    (proximity.type === "landmark" || place.type === proximity.type) &&
-    place.distanceMeters <= proximity.max_distance_m &&
-    (!proximity.name || place.name.toLocaleLowerCase().includes(proximity.name.toLocaleLowerCase()))
-  );
+  // Choose the nearest matching landmark, not merely the first one in API order.
+  return hotel.landmarks
+    ?.filter(place =>
+      (proximity.type === "landmark" || place.type === proximity.type) &&
+      place.distanceMeters <= proximity.max_distance_m &&
+      (!proximity.name || place.name.toLocaleLowerCase().includes(proximity.name.toLocaleLowerCase())))
+    .reduce<NonNullable<HotelDetails["landmarks"]>[number] | undefined>(
+      (nearest, place) => !nearest || place.distanceMeters < nearest.distanceMeters ? place : nearest, undefined);
 }
 
 export function matchesProximity(hotel: HotelDetails, proximity: Proximity): boolean {

@@ -6,6 +6,7 @@ import { runTool } from "./tool.helpers.js";
 import type { ToolDependencies } from "./tool.types.js";
 import { findProximity, mentionsRailway } from "./proximity.js";
 import { validateStayDates } from "./stay-dates.js";
+import type { HotelAvailability } from "../types.js";
 
 export function registerSearchHotels(server: McpServer, { client, maxResults, hotelPublicBaseUrl }: ToolDependencies): void {
   server.registerTool("search_hotels", {
@@ -53,13 +54,19 @@ export function registerSearchHotels(server: McpServer, { client, maxResults, ho
     const bookable = availability.filter(hotel => hotel.rooms.some(room => (room.minNights ?? 1) <= nights));
     const bookableIds = new Set(bookable.map(hotel => hotel.hotelId));
     const inspectMore = group || args.proximity || args.exclude_hostels || args.preferences.length || args.pool_type;
-    const candidates = [...bookable, ...availability.filter(hotel => !bookableIds.has(hotel.hotelId))]
-      .slice(0, inspectMore ? 200 : Math.min(maxResults * 2, 50));
+    // The upstream order is arbitrary: rank by price first so the bounded pool is
+    // deterministic and never drops the cheapest matches. Hotels with location or
+    // service filters need many more inspected candidates, since most are discarded.
+    const cheapest = (hotel: HotelAvailability) => Math.min(...hotel.rooms.map(room =>
+      (args.budget_type === "per_night" ? room.pricePerNight : room.totalPrice) ?? Infinity));
+    const byPrice = (a: HotelAvailability, b: HotelAvailability) => cheapest(a) - cheapest(b);
+    const candidates = [...bookable.sort(byPrice), ...availability.filter(hotel => !bookableIds.has(hotel.hotelId)).sort(byPrice)]
+      .slice(0, inspectMore ? 400 : Math.min(maxResults * 2, 50));
     const hotelIds = candidates.map((hotel) => hotel.hotelId);
-    const details = [];
-    for (let offset = 0; offset < hotelIds.length; offset += 50) {
-      details.push(...mapHotelDetails(await client.getHotelDetails(hotelIds.slice(offset, offset + 50), args.language), args.language, hotelPublicBaseUrl));
-    }
+    const batches: number[][] = [];
+    for (let offset = 0; offset < hotelIds.length; offset += 50) batches.push(hotelIds.slice(offset, offset + 50));
+    const details = (await Promise.all(batches.map(async batch =>
+      mapHotelDetails(await client.getHotelDetails(batch, args.language), args.language, hotelPublicBaseUrl)))).flat();
     const eligible = details.filter(hotel => {
       if (args.exclude_hostels && hotel.isHostel !== false) return false;
       if (args.pool_type && !hotel.poolTypes?.some(type => args.pool_type === "either" || type === args.pool_type)) return false;
