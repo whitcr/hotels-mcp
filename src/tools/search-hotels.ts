@@ -105,6 +105,7 @@ export function registerSearchHotels(server: McpServer, { client, maxResults, ho
         const reach = args.proximity?.max_distance_m;
         const rankScore = Math.round(((result.stars ?? 0) * 0.5
           + (result.photos.length ? 0.5 : 0) + (result.description ? 0.5 : 0)
+          + (result.reviews && result.reviews.count >= 5 ? result.reviews.score / 10 : 0)
           + (result.locationMatch && reach ? 2 * Math.max(0, 1 - result.locationMatch.distanceMeters / reach) : 0)) * 100) / 100;
         return {
           ...result,

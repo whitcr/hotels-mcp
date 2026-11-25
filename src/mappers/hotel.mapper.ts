@@ -1,6 +1,15 @@
 import type { Destination, HotelAvailability, HotelDetails, HotelSearchResult } from "../types.js";
 import { absolutePhotoUrl, absolutePublicUrl, array, conciseText, localized, number, object, string, textList, unwrap } from "./mapper.helpers.js";
 
+/** Guest reviews: mediumReviewRating is on a 0-10 scale (unlike the internal ranking numbers). */
+function mapReviews(value: unknown): HotelDetails["reviews"] {
+  const info = object(value);
+  const score = number(info?.mediumReviewRating);
+  const count = number(info?.reviewsCount);
+  if (score === undefined || count === undefined || !Number.isInteger(count) || count < 1 || score < 0 || score > 10) return undefined;
+  return { score: Math.round(score * 10) / 10, count };
+}
+
 export function mapDestinations(payload: unknown, language: string): Destination[] {
   const root = object(unwrap(payload));
   if (!root) return [];
@@ -70,6 +79,7 @@ export function mapHotelDetails(payload: unknown, language: string, publicBaseUr
       address: localized(record.address, language),
       description: conciseText(localized(description?.text ?? descriptions?.shortInfo ?? descriptions?.info ?? descriptions?.text ?? record.description, language), 1_500),
       stars: number(record.class ?? record.stars),
+      reviews: mapReviews(record.reviewsInfo),
       // Legacy hotel-info's "rating" is ratingConversion, not a guest review
       // score. Do not expose it as a customer-facing rating or percentage.
       longitude: number(coordinates[0] ?? location?.longitude ?? record.longitude),

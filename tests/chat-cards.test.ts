@@ -101,3 +101,25 @@ describe("cards mode", () => {
     assert.match(requests.at(-1).input[0].content, /RECOMMENDED/);
   });
 });
+
+describe("guest review score", () => {
+  it("maps the 0-10 review scale and ignores missing or out-of-range data", () => {
+    const [good, none, bad] = mapHotelDetails([
+      { hotel_id: 1, reviewsInfo: { mediumReviewRating: 8.74, reviewsCount: 104 } },
+      { hotel_id: 2, reviewsInfo: { reviewsCount: 0, mediumReviewRating: 0 } },
+      { hotel_id: 3, reviewsInfo: { mediumReviewRating: 97, reviewsCount: 5 } },
+    ], "uk", "https://hotels24.ua");
+    assert.deepEqual(good!.reviews, { score: 8.7, count: 104 });
+    assert.equal(none!.reviews, undefined);
+    assert.equal(bad!.reviews, undefined);
+  });
+  it("shows a score on the card only when there are at least three reviews", () => {
+    const cards = new Map<number, HotelCard>();
+    collectHotelCards({ hotels: [
+      { id: 1, name: "A", url: "https://hotels24.ua/a", reviews: { score: 9.6, count: 44 } },
+      { id: 2, name: "B", url: "https://hotels24.ua/b", reviews: { score: 10, count: 1 } },
+    ] }, cards);
+    assert.deepEqual([cards.get(1)!.reviews_score, cards.get(1)!.reviews_count], [9.6, 44]);
+    assert.equal(cards.get(2)!.reviews_score, undefined);
+  });
+});

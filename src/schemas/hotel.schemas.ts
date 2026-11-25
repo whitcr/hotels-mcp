@@ -91,6 +91,7 @@ const hotelDetailsOutput = z.object({
   description: z.string().optional(),
   shortDescription: z.string().optional(),
   stars: z.number().optional(),
+  reviews: z.object({ score: z.number().min(0).max(10), count: z.number().int().positive() }).optional(),
   rating: z.number().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),

@@ -44,6 +44,8 @@ export interface HotelDetails {
   address?: string;
   description?: string;
   stars?: number;
+  /** Guest review score on Hotels24's 0-10 review scale and the number of reviews behind it. */
+  reviews?: { score: number; count: number };
   rating?: number;
   latitude?: number;
   longitude?: number;

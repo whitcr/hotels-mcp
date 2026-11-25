@@ -30,7 +30,7 @@ it("adds the requested stay in dd.mm.yyyy to verified links, preserving language
   const url = "https://hotels24.ua/uk/Vyshneve/Hotel-Ukrainskiy-Tenisniy-Centr-Viccourt-14807.html";
   const stay = {check_in:"2026-12-09",check_out:"2026-12-17"};
   assert.equal(normalizeHotelLinks(`[Hotel](${url})`,new Map([[14807,url]]),stay).text,
-    `[Hotel](${url}?dateArrival=09.12.2026&dateDeparture=17.12.2026)`);
+    `[Hotel](${url}?dateArrival=09.12.2026&dateDeparture=17.12.2026&userInitMark=true)`);
   const original = url+"?utm_source=chat&dateArrival=01.01.2025&dateArrival=02.01.2025&dateDeparture=03.01.2025#rooms";
   const result = normalizeHotelLinks(original,new Map([[14807,original]]),stay);
   const parsed = new URL(result.text);
@@ -44,7 +44,7 @@ it("overrides dates invented by the model and rejects foreign/unverified hotel l
   const url = "https://hotels24.ua/uk/Hotel-14807.html";
   const stay = {check_in:"2026-12-31",check_out:"2027-01-02"};
   const result = normalizeHotelLinks(`[Hotel](${url}?dateArrival=01.01.2020&dateDeparture=02.01.2020).`,new Map([[14807,url]]),stay);
-  assert.equal(result.text,`[Hotel](${url}?dateArrival=31.12.2026&dateDeparture=02.01.2027).`);
+  assert.equal(result.text,`[Hotel](${url}?dateArrival=31.12.2026&dateDeparture=02.01.2027&userInitMark=true).`);
   assert.equal(normalizeHotelLinks("https://evil.example/Hotel-14807.html",new Map([[14807,url]]),stay).unverified,true);
   assert.equal(normalizeHotelLinks(url,new Map(),stay).unverified,true);
 });
@@ -58,5 +58,16 @@ it("does not invent dates when they are absent, incomplete, invalid or reversed"
   const url="https://hotels24.ua/uk/hotel-without-id";
   assert.equal(normalizeHotelLinks(url,new Map([[1,url]])).text,url);
   assert.equal(normalizeHotelLinks(`[Hotel](${url})`,new Map([[1,url]]),{check_in:"2027-01-01",check_out:"2027-01-02"}).text,
-    `[Hotel](${url}?dateArrival=01.01.2027&dateDeparture=02.01.2027)`);
+    `[Hotel](${url}?dateArrival=01.01.2027&dateDeparture=02.01.2027&userInitMark=true)`);
+});
+
+it("marks the dates as the visitor's own choice, which the mobile site requires to show them", () => {
+  const url = "https://hotels24.ua/uk/Odesa/Hotel-Deribas-748.html";
+  const result = normalizeHotelLinks(`[Hotel](${url})`, new Map([[748, url]]), { check_in: "2026-12-20", check_out: "2026-12-22" });
+  const link = new URL(/\((.*)\)/.exec(result.text)![1]!);
+  assert.equal(link.searchParams.get("dateArrival"), "20.12.2026");
+  assert.equal(link.searchParams.get("dateDeparture"), "22.12.2026");
+  assert.equal(link.searchParams.get("userInitMark"), "true");
+  // Without a stay nothing is added.
+  assert.equal(normalizeHotelLinks(`[Hotel](${url})`, new Map([[748, url]])).text, `[Hotel](${url})`);
 });

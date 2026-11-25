@@ -17,6 +17,9 @@ function withStay(url: string, stay?: LinkStay): string {
   const displayDate = (date: string) => date.split("-").reverse().join(".");
   parsed.searchParams.set("dateArrival", displayDate(stay.check_in));
   parsed.searchParams.set("dateDeparture", displayDate(stay.check_out));
+  // Hotels24 treats dates from a link as the visitor's own choice (and fills the date fields on the
+  // mobile site) only with this flag; without it the dates are ignored there.
+  parsed.searchParams.set("userInitMark", "true");
   return parsed.href;
 }
 
@@ -72,6 +75,8 @@ export interface HotelCard {
   currency?: string;
   distance_m?: number;
   distance_type?: string;
+  reviews_score?: number;
+  reviews_count?: number;
   price_tier?: "economy" | "mid" | "comfort";
   /** One factual sentence written by the assistant from returned data; shown on the card. */
   summary?: string;
@@ -91,6 +96,7 @@ export function collectHotelCards(output: unknown, cards: Map<number, HotelCard>
   const tiers = ["economy", "mid", "comfort"] as const;
   for (const hotel of output.hotels) {
     if (!hotel || !Number.isInteger(hotel.id) || typeof hotel.name !== "string" || !httpUrl(hotel.url)) continue;
+    const reviews = hotel.reviews && Number.isInteger(hotel.reviews.count) && typeof hotel.reviews.score === "number" ? hotel.reviews as { score: number; count: number } : undefined;
     const missing = Array.isArray(hotel.missingPreferences)
       ? hotel.missingPreferences.filter((item: unknown): item is string => typeof item === "string" && item.length > 0 && item.length <= 60).slice(0, 2) : [];
     cards.set(hotel.id, {
@@ -100,6 +106,9 @@ export function collectHotelCards(output: unknown, cards: Map<number, HotelCard>
       currency: typeof hotel.currency === "string" ? hotel.currency : undefined,
       distance_m: finite(hotel.locationMatch?.distanceMeters),
       distance_type: typeof hotel.locationMatch?.type === "string" ? hotel.locationMatch.type : undefined,
+      // A score from one or two reviews is not a signal: show it only with at least three.
+      reviews_score: reviews && reviews.count >= 3 ? finite(reviews.score) : undefined,
+      reviews_count: reviews && reviews.count >= 3 ? reviews.count : undefined,
       price_tier: tiers.find(tier => tier === hotel.priceTier),
       min_stay_nights: Number.isInteger(hotel.minimumStayNights) ? hotel.minimumStayNights : undefined,
       missing: missing.length ? missing : undefined,
