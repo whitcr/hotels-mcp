@@ -1,5 +1,5 @@
 import type { Destination, HotelAvailability, HotelDetails, HotelSearchResult } from "../types.js";
-import { absolutePublicUrl, array, conciseText, localized, number, object, string, textList, unwrap } from "./mapper.helpers.js";
+import { absolutePhotoUrl, absolutePublicUrl, array, conciseText, localized, number, object, string, textList, unwrap } from "./mapper.helpers.js";
 
 export function mapDestinations(payload: unknown, language: string): Destination[] {
   const root = object(unwrap(payload));
@@ -47,9 +47,9 @@ export function mapHotelDetails(payload: unknown, language: string, publicBaseUr
       : ((hotelTypeId !== undefined && hotelTypeId > 0) || propertyType ? false : undefined);
     const photos = array(media?.photos ?? record.photos ?? [record.hotel_photo, record.our_url_original]).flatMap((photo) => {
       const photoRecord = object(photo);
-      const url = string(photoRecord?.url ?? photoRecord?.src ?? photo);
+      const url = absolutePhotoUrl(photoRecord?.url ?? photoRecord?.src ?? photo);
       return url ? [url] : [];
-    }).slice(0, 5);
+    }).filter((url, index, all) => all.indexOf(url) === index).slice(0, 5);
     return [{
       id,
       name: localized(record.name, language),

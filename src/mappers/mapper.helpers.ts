@@ -85,3 +85,30 @@ export function absolutePublicUrl(value: unknown, publicBaseUrl: string, fallbac
     return new URL(fallbackPath, base).toString();
   }
 }
+
+const PHOTO_BASE = "https://img.hotels24.ua/photos/";
+
+/**
+ * Hotels24 returns photo paths relative to its image host (e.g. "partner_hotel/.../x-foto-1.jpg").
+ * The image host serves size variants by suffix: "mx" (about 500 px) is right for chat cards.
+ */
+export function absolutePhotoUrl(value: unknown, size = "mx"): string | undefined {
+  const raw = string(value);
+  if (!raw) return undefined;
+  // Any other scheme (javascript:, data:, ...) is never a photo path.
+  if (/^[a-z][a-z0-9+.-]*:/i.test(raw) && !/^https?:/i.test(raw)) return undefined;
+  let candidate: string;
+  if (/^https?:\/\//i.test(raw)) candidate = raw.replace(/^http:/i, "https:");
+  else if (raw.startsWith("//")) candidate = `https:${raw}`;
+  else candidate = PHOTO_BASE + raw.replace(/^\/+/, "");
+  try {
+    const url = new URL(candidate);
+    if (url.protocol !== "https:" || url.username || url.password) return undefined;
+    if (/(?:^|\.)hotels24\.ua$/i.test(url.hostname)) {
+      url.pathname = url.pathname.replace(/(?:z600|mx|sm)?(\.(?:jpe?g|png|webp))$/i, `${size}$1`);
+    }
+    return url.href;
+  } catch {
+    return undefined;
+  }
+}

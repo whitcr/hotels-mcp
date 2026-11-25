@@ -49,7 +49,7 @@ export interface HotelDetails {
   longitude?: number;
   facilities: string[];
   poolTypes?: Array<"indoor" | "outdoor">;
-  locationMatch?: { name: string; distanceMeters: number };
+  locationMatch?: { name: string; distanceMeters: number; type?: string };
   photos: string[];
   checkIn?: string;
   checkOut?: string;

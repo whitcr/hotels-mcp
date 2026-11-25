@@ -83,7 +83,7 @@ export function registerSearchHotels(server: McpServer, { client, maxResults, ho
       if (args.proximity) {
         const locationMatch = findProximity(hotel, args.proximity);
         if (!locationMatch) return false;
-        hotel.locationMatch = { name: locationMatch.name, distanceMeters: locationMatch.distanceMeters };
+        hotel.locationMatch = { name: locationMatch.name, distanceMeters: locationMatch.distanceMeters, type: args.proximity.type };
       }
       return true;
     });

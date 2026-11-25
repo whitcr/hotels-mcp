@@ -185,7 +185,8 @@ app.post("/chat/operator", requireAllowedOrigin, rateLimit, requireAuth, async (
   }
 });
 
-app.post("/chat", requireAllowedOrigin, rateLimit, requireAuth, async (request, response, next) => {
+// One implementation for both transports: plain JSON (/chat) and Server-Sent Events (/chat/stream).
+const chatRoute = (streaming: boolean) => async (request: Request, response: Response, next: NextFunction) => {
   if (!hotelChat) {
     response.status(503).json({ error: "OPENAI_API_KEY is not configured", request_id: response.locals.requestId });
     return;
@@ -220,8 +221,22 @@ app.post("/chat", requireAllowedOrigin, rateLimit, requireAuth, async (request, 
   };
   const startedAt = Date.now();
   await chatLogs?.enqueue(makeEvent(context, { event_type: "user_message", role: visitorRole, message: telemetry?.message || message }));
+  let send: (event: string, data: unknown) => void = () => undefined;
+  let keepAlive: NodeJS.Timeout | undefined;
+  if (streaming) {
+    response.status(200).set({
+      "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache, no-transform",
+      "X-Accel-Buffering": "no", Connection: "keep-alive",
+    });
+    response.flushHeaders();
+    send = (event, data) => { if (!response.writableEnded) response.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`); };
+    keepAlive = setInterval(() => { if (!response.writableEnded) response.write(": ping\n\n"); }, 10_000);
+    response.on("close", () => clearInterval(keepAlive));
+  }
   try {
-    const { usage, analytics, ...result } = await hotelChat.respond(message, previousResponseId, telemetry?.language);
+    const { usage, analytics, ...result } = await hotelChat.respond(message, previousResponseId, telemetry?.language,
+      streaming ? { onDelta: text => send("delta", { text }), onStatus: phase => send("status", { phase }) } : undefined,
+      { cards: telemetry?.cards === true });
     for (const item of analytics) {
       await chatLogs?.enqueue(makeEvent({ ...context, chat_language: result.language }, {
         event_type: item.kind, role: "assistant", message: JSON.stringify(item.detail),
@@ -231,16 +246,32 @@ app.post("/chat", requireAllowedOrigin, rateLimit, requireAuth, async (request, 
       event_type: "assistant_message", role: "assistant", message: result.message,
       response_ms: Date.now() - startedAt, model: config.openAiModel, ...usage,
     }));
-    response.json({ ...result, chat_id: chatId });
+    if (streaming) {
+      clearInterval(keepAlive);
+      send("done", { ...result, chat_id: chatId });
+      response.end();
+    } else {
+      response.json({ ...result, chat_id: chatId });
+    }
   } catch (error) {
     await chatLogs?.enqueue(makeEvent(context, {
       event_type: "error", error_code: "chat_generation_failed", response_ms: Date.now() - startedAt,
       ...(error instanceof ChatGenerationError ? error.usage : {}),
       model: config.openAiModel,
     }));
-    next(error);
+    if (streaming) {
+      // Headers are already sent: report the failure as an event instead of an HTTP status.
+      clearInterval(keepAlive);
+      send("error", { error: "chat_generation_failed", request_id: response.locals.requestId });
+      response.end();
+    } else {
+      next(error);
+    }
   }
-});
+};
+
+app.post("/chat", requireAllowedOrigin, rateLimit, requireAuth, chatRoute(false));
+app.post("/chat/stream", requireAllowedOrigin, rateLimit, requireAuth, chatRoute(true));
 
 // Funnel events from the chat widget (clicks). Server-to-server, like /chat; no personal data accepted.
 app.post("/chat/event", requireAllowedOrigin, rateLimit, requireAuth, async (request, response) => {

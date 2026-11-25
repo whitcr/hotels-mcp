@@ -59,6 +59,8 @@ export function normalizeHotelLinks(text: string, links: Map<number, string>, st
   return {text: normalized, unverified};
 }
 
+export type CardBadge = "economy" | "mid" | "comfort" | "best_price" | "nearest";
+
 export interface HotelCard {
   id: number;
   name: string;
@@ -69,6 +71,11 @@ export interface HotelCard {
   price_per_night?: number;
   currency?: string;
   distance_m?: number;
+  distance_type?: string;
+  price_tier?: "economy" | "mid" | "comfort";
+  min_stay_nights?: number;
+  missing?: string[];
+  badges?: CardBadge[];
 }
 
 /** Display data for hotels the assistant may recommend; only returned tool data, never model text. */
@@ -79,27 +86,60 @@ export function collectHotelCards(output: unknown, cards: Map<number, HotelCard>
     try { return ["https:", "http:"].includes(new URL(value).protocol) ? value : undefined; } catch { return undefined; }
   };
   const finite = (value: unknown) => typeof value === "number" && Number.isFinite(value) ? value : undefined;
+  const tiers = ["economy", "mid", "comfort"] as const;
   for (const hotel of output.hotels) {
     if (!hotel || !Number.isInteger(hotel.id) || typeof hotel.name !== "string" || !httpUrl(hotel.url)) continue;
+    const missing = Array.isArray(hotel.missingPreferences)
+      ? hotel.missingPreferences.filter((item: unknown): item is string => typeof item === "string" && item.length > 0 && item.length <= 60).slice(0, 2) : [];
     cards.set(hotel.id, {
       id: hotel.id, name: hotel.name, url: hotel.url,
       photo: httpUrl(Array.isArray(hotel.photos) ? hotel.photos[0] : undefined),
       stars: finite(hotel.stars), total_price: finite(hotel.totalPrice), price_per_night: finite(hotel.pricePerNight),
       currency: typeof hotel.currency === "string" ? hotel.currency : undefined,
       distance_m: finite(hotel.locationMatch?.distanceMeters),
+      distance_type: typeof hotel.locationMatch?.type === "string" ? hotel.locationMatch.type : undefined,
+      price_tier: tiers.find(tier => tier === hotel.priceTier),
+      min_stay_nights: Number.isInteger(hotel.minimumStayNights) ? hotel.minimumStayNights : undefined,
+      missing: missing.length ? missing : undefined,
     });
     if (cards.size > 50) cards.delete(cards.keys().next().value!);
   }
 }
 
+/** Labels computed only from the cards actually shown together: tier, cheapest, nearest. */
+export function decorateCards(cards: HotelCard[]): HotelCard[] {
+  const unique = <T>(items: Array<{ card: HotelCard; value: T }>, better: (a: T, b: T) => boolean): HotelCard | undefined => {
+    if (items.length < 2) return undefined;
+    const best = items.reduce((a, b) => better(b.value, a.value) ? b : a);
+    return items.some(item => item !== best && item.value === best.value) ? undefined : best.card;
+  };
+  const cheapest = unique(cards.flatMap(card => card.price_per_night !== undefined ? [{ card, value: card.price_per_night }] : []), (a, b) => a < b);
+  const nearest = unique(cards.flatMap(card => card.distance_m !== undefined ? [{ card, value: card.distance_m }] : []), (a, b) => a < b);
+  return cards.map(card => {
+    const badges: CardBadge[] = [];
+    if (card.price_tier) badges.push(card.price_tier);
+    if (card === cheapest) badges.push("best_price");
+    if (card === nearest) badges.push("nearest");
+    return badges.length ? { ...card, badges } : card;
+  });
+}
+
+function datedCard(card: HotelCard, stay?: LinkStay): HotelCard {
+  return { ...card, url: withStay(card.url, readLinkStay(stay)) };
+}
+
+/** Cards for hotels the model chose by id; only hotels returned by tools in this conversation can appear. */
+export function cardsForIds(ids: number[], cards: Map<number, HotelCard>, stay?: LinkStay): HotelCard[] {
+  return decorateCards(ids.flatMap(id => cards.has(id) ? [datedCard(cards.get(id)!, stay)] : []).slice(0, 5));
+}
+
 /** Cards for hotels whose verified (dated) link appears in the final answer, in order of appearance. */
 export function cardsForAnswer(text: string, cards: Map<number, HotelCard>, stay?: LinkStay): HotelCard[] {
-  const dated = readLinkStay(stay);
-  return [...cards.values()]
-    .map(card => ({ ...card, url: withStay(card.url, dated) }))
+  return decorateCards([...cards.values()]
+    .map(card => datedCard(card, stay))
     .map(card => ({ card, at: text.indexOf(card.url) }))
     .filter(entry => entry.at >= 0)
     .sort((a, b) => a.at - b.at)
     .slice(0, 5)
-    .map(entry => entry.card);
+    .map(entry => entry.card));
 }

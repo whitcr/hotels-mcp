@@ -101,7 +101,7 @@ const hotelDetailsOutput = z.object({
   url: z.string().url().optional(),
   matchReasons: z.array(z.string()),
   poolTypes: z.array(z.enum(["indoor", "outdoor"])).optional(),
-  locationMatch: z.object({ name: z.string(), distanceMeters: z.number().nonnegative() }).optional(),
+  locationMatch: z.object({ name: z.string(), distanceMeters: z.number().nonnegative(), type: z.string().optional() }).optional(),
   landmarks: z.array(z.object({ type: z.string(), name: z.string(), distanceMeters: z.number().nonnegative() })).optional(),
 });
 

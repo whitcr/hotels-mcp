@@ -8,13 +8,15 @@ export const telemetrySchema = z.object({
   context: z.enum(["hotel", "search"]).optional(),
   environment: z.enum(["prod", "stage", "local"]).optional(),
   message: z.string().min(1).max(4000).optional(),
+  /** The widget can render hotel cards: the assistant then keeps hotel details out of the text. */
+  cards: z.boolean().optional(),
   operator_token: z.string().length(32).regex(/^[a-f0-9]{32}$/i).optional(),
 });
 
 /** Frontend funnel events: what was clicked, never free text or personal data. */
 export const uiEventSchema = z.object({
   chat_id: z.string().regex(/^[a-f0-9-]{24,36}$/i),
-  type: z.enum(["hotel_click", "quick_reply_click", "handoff_click", "hotel_card_click"]),
+  type: z.enum(["hotel_click", "quick_reply_click", "handoff_click", "hotel_card_click", "compare_click"]),
   hotel_id: z.number().int().positive().optional(),
   environment: z.enum(["prod", "stage", "local"]).optional(),
 });

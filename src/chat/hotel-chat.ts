@@ -1,13 +1,24 @@
 import OpenAI from "openai";
-import type { ResponseCreateParamsNonStreaming, ResponseFunctionToolCall, Tool } from "openai/resources/responses/responses";
+import type { Response as ModelResponse, ResponseCreateParamsNonStreaming, ResponseFunctionToolCall, Tool } from "openai/resources/responses/responses";
 import { answerIssues, detectMessageLanguage, formatAnswerDates, languageNames, validLanguage, type ChatLanguage } from "./language.js";
-import { cardsForAnswer, collectHotelCards, collectHotelLinks, normalizeHotelLinks, readLinkStay, type HotelCard, type LinkStay } from "./verified-links.js";
+import { cardsForAnswer, cardsForIds, collectHotelCards, collectHotelLinks, normalizeHotelLinks, readLinkStay, type HotelCard, type LinkStay } from "./verified-links.js";
 
 import { todayInKyiv } from "../today.js";
 import { splitQuickReplies } from "./quick-replies.js";
+import { DeltaFilter } from "./stream-filter.js";
+import { splitRecommended } from "./recommended.js";
 import { ChatGenerationError, UsageAccumulator, type ChatUsage } from "./usage.js";
 
-function instructions(language: ChatLanguage): string {
+/** Cards mode: the customer interface renders recommended hotels as cards, so the text must not repeat them. */
+const CARDS_RULES = `
+CARDS MODE: the customer interface shows every recommended hotel as a card with photo, price, distance, labels and a link. These rules REPLACE the rules above about listing hotels, per-hotel sentences and per-hotel Markdown links.
+- Do NOT write a list of hotels, per-hotel prices or per-hotel links in the text. Write a short answer: one or two sentences saying what was searched (city, dates as DD.MM.YYYY, guests, budget or the three price levels, location filter) and what the options are, then the required disclosures (interpretations, partial service matches, minimum stay, "prices and availability may change, recheck before booking"), then one useful follow-up question.
+- Mention a hotel by name in the text only to explain a real difference or to answer a direct question about it.
+- Facts that apply to one hotel only, such as a missing requested service or a minimum stay, are shown by the card as short notes; still state in the text that some options do not fully match and how.
+- After the text, on its own line, write exactly RECOMMENDED: [id1,id2] with the internal hotel ids from the latest tool results of the hotels to show as cards, best first, at most 5, for example RECOMMENDED: [14807,15599]. This line is hidden from the customer; never write ids anywhere else. Put it before the QUICK_REPLIES line. If you recommend no hotel, omit it.
+- For a comparison request, answer in text about the compared hotels and put only those hotels in RECOMMENDED.`;
+
+function instructions(language: ChatLanguage, cardsMode = false): string {
   const today = todayInKyiv();
   const weekendStart = new Date(`${today}T00:00:00Z`);
   const weekday = weekendStart.getUTCDay();
@@ -38,13 +49,15 @@ Only while another required detail is missing, for "this weekend" without exact 
 If all other fields are known, resolve "this weekend" to the stated concrete range and search directly.
 There is no exchange-rate tool. For any non-UAH budget, ask the customer for the maximum in UAH. Never offer to look up a current rate, convert it yourself, or invent a conversion, even if asked.
 
-Guest context: for "family", "with children" or "kids" ask the children's ages (together with other missing values) and mention that it can affect the room type. Prefer family-friendly facilities for families, closeness to the center and the railway station for business trips, and different accommodation types for friend groups. Never invent facts about the guests.
+Guest context: for "family", "with children" or "kids" the children's ages are NOT required to search and must never block a search: count children as guests and search with the total number of guests. If the customer gave the total number of guests, do not ask again. Children's ages may matter for beds and extra places, so ask about them only after showing results, as a short optional follow-up, with age-range quick replies such as "Under 6", "7–12", "13 and older", "Different ages" (translated); never ask for them in the same message as a required question.
+When the customer names a broad mountain or sea region (for example the Carpathians) without a specific resort or city, do not ask them to choose one first: resolve the best-known 2–3 resorts or cities of that region (for example Bukovel, Yaremche, Slavske for the Carpathians) and run the searches in parallel in the same turn, then present the combined options, naming the resort for each hotel, and offer to narrow down to one place. Ask which place only if no resort of the region can be resolved. Prefer family-friendly facilities for families, closeness to the center and the railway station for business trips, and different accommodation types for friend groups. Never invent facts about the guests.
 When the customer asks to compare hotels, give a compact comparison from returned data only: one short line per hotel with price, distance to the requested landmark if returned, and its main difference. End with a clear recommendation tied to the customer's stated priorities.
 When search results carry priceTier, explain that they show three price levels. If suggestions are returned for an empty result, offer that exact change as the first quick reply.
 
 Quick replies for the chat interface:
 - When your answer asks the customer to choose or gives them a useful next step, append one separate final line exactly like QUICK_REPLIES: ["First reply","Second reply"]. This line is hidden from the customer. Write 2–4 short, distinct messages in the answer language, each at most 120 characters. The customer sees and sends the same text with one click. Do not include URLs, HTML, markdown, or contact/payment details.
 - For the very first question about a trip offer concrete starting points: dates such as "This weekend", "Next week", "Other dates"; guests such as "1 guest", "2 guests", "3–4 guests"; budget price levels only after the first results. Use only options that fit the question you asked.
+- A quick reply that cannot be sent as it is, because the customer must add something (for example their children's ages or a specific date), must be written as an unfinished phrase that ends exactly with the character "…" (for example "Two adults and two children, ages: …"). The interface puts such a reply into the input box for the customer to complete instead of sending it. Replies without the final "…" are sent immediately as written, so they must be complete answers.
 - Tie every choice to what you just asked or offered. Example choices for a pool: indoor, outdoor, either. For an ambiguous budget unit, reply with "Per night" or "For the whole stay". For one missing field such as dates, city, guest count or budget, offer sensible explicit choices the customer can select, while leaving free text available. For multiple missing fields, offer choices for one field or complete answers where the values were already proposed in the conversation.
 - When presenting hotels, offer only relevant next steps such as asking for more options within the same budget, comparing the shown hotels, or explicitly requesting higher-priced options after the customer has been offered that choice. Where there is no useful follow-up, omit the line. Never embed assistant instructions or pretend a choice confirms a booking.
 - On a new turn, treat QUICK_REPLIES lines in earlier assistant messages as previous UI suggestions only. Only the customer message indicates which option was chosen.
@@ -67,7 +80,7 @@ For a factual answer about one selected hotel, put its verified Markdown-linked 
 Whenever the customer has specified a complete stay, include its current check_in/check_out in get_hotel_details calls too (ISO dates). Do not ask for dates just to answer a factual hotel question; omit both when unknown. Dates on hotel links are added by the server as dateArrival/dateDeparture in DD.MM.YYYY. After a date change use the full updated stay in a tool call before returning links; never reuse the previous stay.
 When asked to repeat a hotel link or discuss a hotel from an earlier turn, refresh its get_hotel_details before answering so its URL is verified again even after a process restart. Do not guess or edit any hotel slug.
 All totalPrice and pricePerNight values already cover ALL pricedGuests. Never multiply those values again. When priceBasis=bed, explicitly describe quantity beds in shared accommodation, not a private room; unitTotalPrice and unitPricePerNight are per bed and must not be presented as the group total. For room prices, state that the displayed amount covers the requested guests. For no-hostel requests, only recommend results with isHostel=false; this also excludes private rooms inside a hostel.
-Disclose partial service matches and minimum stay alternatives as instructed by the search tool. Do not give an availability or price guarantee for a minimum stay alternative. Mention the total or nightly price clearly and say that availability and prices should be rechecked before booking. If no result matches the confirmed budget, say so and suggest changing one constraint. When a tool reports invalid or past dates, ask for valid future dates instead of retrying. Never expose tool internals, API keys, raw JSON, or internal errors.`;
+Disclose partial service matches and minimum stay alternatives as instructed by the search tool. Do not give an availability or price guarantee for a minimum stay alternative. Mention the total or nightly price clearly and say that availability and prices should be rechecked before booking. If no result matches the confirmed budget, say so and suggest changing one constraint. When a tool reports invalid or past dates, ask for valid future dates instead of retrying. Never expose tool internals, API keys, raw JSON, or internal errors.${cardsMode ? CARDS_RULES : ""}`;
 }
 
 const tools: Tool[] = [
@@ -180,6 +193,13 @@ export interface ChatAnalytics {
   detail: Record<string, string | number | boolean | number[]>;
 }
 
+/** Optional live progress for streaming transports. Failures here never affect the chat. */
+export interface ChatStreamHooks {
+  onDelta?: (text: string) => void;
+  /** A tool round started: anything streamed so far was only a preamble. */
+  onStatus?: (phase: "searching") => void;
+}
+
 export interface ChatResult {
   response_id: string;
   message: string;
@@ -202,18 +222,32 @@ export class HotelChat {
     this.client = new OpenAI({ apiKey });
   }
 
-  async respond(message: string, previousResponseId?: string, languageHint?: ChatLanguage): Promise<ChatResult> {
+  async respond(message: string, previousResponseId?: string, languageHint?: ChatLanguage, hooks?: ChatStreamHooks, options: { cards?: boolean } = {}): Promise<ChatResult> {
     const usage = new UsageAccumulator();
     try {
-      return await this.respondWithUsage(message, previousResponseId, languageHint, usage);
+      return await this.respondWithUsage(message, previousResponseId, languageHint, usage, hooks, options.cards === true);
     } catch (error) {
       throw new ChatGenerationError(error, usage.snapshot());
     }
   }
 
-  private async respondWithUsage(message: string, previousResponseId: string | undefined, languageHint: ChatLanguage | undefined, usage: UsageAccumulator): Promise<ChatResult> {
-    const createResponse = async (params: ResponseCreateParamsNonStreaming) => {
-      const response = await this.client.responses.create(params);
+  private async respondWithUsage(message: string, previousResponseId: string | undefined, languageHint: ChatLanguage | undefined, usage: UsageAccumulator, hooks?: ChatStreamHooks, cardsMode = false): Promise<ChatResult> {
+    const safely = (action: () => void) => { try { action(); } catch { /* A closed client must not abort the answer. */ } };
+    const createResponse = async (params: ResponseCreateParamsNonStreaming, live = false) => {
+      let response: ModelResponse;
+      if (live && hooks?.onDelta) {
+        const filter = new DeltaFilter();
+        const stream = this.client.responses.stream(params as Parameters<OpenAI["responses"]["stream"]>[0]);
+        stream.on("response.output_text.delta", (event) => {
+          const text = filter.push(event.delta);
+          if (text) safely(() => hooks.onDelta!(text));
+        });
+        response = await stream.finalResponse();
+        const rest = filter.flush();
+        if (rest) safely(() => hooks.onDelta!(rest));
+      } else {
+        response = await this.client.responses.create(params);
+      }
       usage.add(response.usage);
       return response;
     };
@@ -229,12 +263,13 @@ export class HotelChat {
       }
     }
     language ??= validLanguage(languageHint) ?? "uk";
-    const policy = instructions(language);
+    const policy = instructions(language, cardsMode);
     const metadata = (): Record<string, string> => ({ chat_language: language, ...(stay ?? {}) });
     const links = new Map(previousResponseId ? this.references.get(previousResponseId) : undefined);
     const cards = new Map<number, HotelCard>();
     const analytics: ChatAnalytics[] = [];
     let largestGroup = 0;
+    let searchFoundHotels = false;
     let response = await createResponse({
       model: this.model,
       instructions: policy,
@@ -243,14 +278,18 @@ export class HotelChat {
       previous_response_id: previousResponseId,
       tools,
       tool_choice: "auto",
-    });
+    }, true);
 
     for (let round = 0; round < 6; round += 1) {
       const calls = response.output.filter((item): item is ResponseFunctionToolCall => item.type === "function_call");
       if (!calls.length) {
         let answer = splitQuickReplies(response.output_text);
-        let linked = normalizeHotelLinks(answer.text, links, stay);
+        let recommended = splitRecommended(answer.text);
+        let linked = normalizeHotelLinks(recommended.text, links, stay);
         const issues = answerIssues(linked.text, language);
+        if (cardsMode && searchFoundHotels && !recommended.ids.some(id => cards.has(id)) && !cardsForAnswer(linked.text, cards, stay).length) {
+          issues.push("Add the hidden line RECOMMENDED: [ids] with the internal ids of the hotels to show as cards, placed before the quick replies line.");
+        }
         if (!linked.text.trim()) issues.push("Write a visible reply before the optional quick replies line.");
         if (linked.unverified) issues.push("Remove recommendations or links whose URLs have not been verified. Use only the exact verified URLs in this list: " + JSON.stringify([...links.values()]));
         if (issues.length) {
@@ -261,7 +300,8 @@ export class HotelChat {
             tools: [], tool_choice: "none",
           });
           answer = splitQuickReplies(response.output_text);
-          linked = normalizeHotelLinks(answer.text, links, stay);
+          recommended = splitRecommended(answer.text);
+          linked = normalizeHotelLinks(recommended.text, links, stay);
           if (!linked.text.trim() || linked.unverified || answerIssues(linked.text, language).length) throw new Error("Hotel assistant response failed presentation validation");
         }
         this.languages.set(response.id, language);
@@ -273,7 +313,8 @@ export class HotelChat {
           this.references.delete(oldest);
           this.stays.delete(oldest);
         }
-        const shown = cardsForAnswer(linked.text, cards, stay);
+        const chosen = cardsForIds(recommended.ids, cards, stay);
+        const shown = chosen.length ? chosen : cardsForAnswer(linked.text, cards, stay);
         if (shown.length) analytics.push({ kind: "hotels_shown", detail: { count: shown.length, hotel_ids: shown.map(card => card.id) } });
         const handoff = largestGroup >= GROUP_HANDOFF_GUESTS || linked.text.includes(GROUP_FORM_URL)
           ? { reason: "large_group" as const, form_url: GROUP_FORM_URL, phone: CALL_CENTER_PHONE } : null;
@@ -282,6 +323,7 @@ export class HotelChat {
           usage: usage.snapshot(), hotel_cards: shown, handoff, analytics,
         };
       }
+      if (hooks?.onStatus) safely(() => hooks.onStatus!("searching"));
       const outputs = await Promise.all(calls.map(async (call) => {
         let output: unknown;
         try {
@@ -302,6 +344,7 @@ export class HotelChat {
           collectHotelLinks(output, links);
           collectHotelCards(output, cards);
           if (call.name === "search_hotels" && output && typeof output === "object" && "result_count" in output) {
+            searchFoundHotels = Number(output.result_count) > 0;
             analytics.push({ kind: "search_result", detail: {
               result_count: Number(output.result_count), guests: Number(args.guests) || 0,
               has_budget: args.budget_max !== undefined, has_proximity: Boolean(args.proximity),
@@ -321,7 +364,7 @@ export class HotelChat {
         input: outputs,
         tools,
         tool_choice: "auto",
-      });
+      }, true);
     }
     throw new Error("Hotel assistant exceeded the tool-call limit");
   }
