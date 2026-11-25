@@ -11,11 +11,11 @@ import { ChatGenerationError, UsageAccumulator, type ChatUsage } from "./usage.j
 
 /** Cards mode: the customer interface renders recommended hotels as cards, so the text must not repeat them. */
 const CARDS_RULES = `
-CARDS MODE: the customer interface shows every recommended hotel as a card with photo, price, distance, labels and a link. These rules REPLACE the rules above about listing hotels, per-hotel sentences and per-hotel Markdown links.
-- Do NOT write a list of hotels, per-hotel prices or per-hotel links in the text. Write a short answer: one or two sentences saying what was searched (city, dates as DD.MM.YYYY, guests, budget or the three price levels, location filter) and what the options are, then the required disclosures (interpretations, partial service matches, minimum stay, "prices and availability may change, recheck before booking"), then one useful follow-up question.
+CARDS MODE: the customer interface shows every recommended hotel as a card with photo, price, distance, labels, a short description and a link. These rules REPLACE the rules above about listing hotels, per-hotel sentences and per-hotel Markdown links.
+- NEVER write a list of hotels, bullets, per-hotel descriptions, per-hotel prices or per-hotel links in the text. The text is only a short intro: one or two sentences saying what was searched (city, dates as DD.MM.YYYY, guests, budget or the three price levels, location filter) and what the options are, then the required disclosures (interpretations, partial service matches, minimum stay, "prices and availability may change, recheck before booking"), then one useful follow-up question.
+- The description of each hotel goes into its card, not into the text. After the text, on its own line, write exactly RECOMMENDED: followed by a JSON array on ONE line, one object per hotel, best first, at most 5, for example RECOMMENDED: [{"id":14807,"summary":"Right in the center, 300 m from Derybasivska; has a wine lobby bar."},{"id":15599,"summary":"..."}]. Use the internal hotel ids from the latest tool results. Each summary is ONE factual sentence of at most 160 characters in the response language, built only from the returned descriptions, facilities, location, matchReasons and landmark distances: where it is and what stands out. Do not put prices, dates, ids, URLs or markup in a summary, and the same claim limits as above apply (never say a service is free, included or guaranteed unless the data says so; mention descriptionMatches only as "mentioned in the description"). The line is hidden from the customer; put it before the QUICK_REPLIES line. If you recommend no hotel, omit it.
+- Facts that apply to one hotel only, such as a missing requested service or a minimum stay, are shown by the card as short notes; still say in the text that some options do not fully match and how.
 - Mention a hotel by name in the text only to explain a real difference or to answer a direct question about it.
-- Facts that apply to one hotel only, such as a missing requested service or a minimum stay, are shown by the card as short notes; still state in the text that some options do not fully match and how.
-- After the text, on its own line, write exactly RECOMMENDED: [id1,id2] with the internal hotel ids from the latest tool results of the hotels to show as cards, best first, at most 5, for example RECOMMENDED: [14807,15599]. This line is hidden from the customer; never write ids anywhere else. Put it before the QUICK_REPLIES line. If you recommend no hotel, omit it.
 - For a comparison request, answer in text about the compared hotels and put only those hotels in RECOMMENDED.`;
 
 function instructions(language: ChatLanguage, cardsMode = false): string {
@@ -26,7 +26,7 @@ function instructions(language: ChatLanguage, cardsMode = false): string {
   const weekendEnd = new Date(weekendStart);
   weekendEnd.setUTCDate(weekendEnd.getUTCDate() + (weekday === 0 || weekday === 6 ? 1 : 2));
   const weekend = `${formatAnswerDates(weekendStart.toISOString().slice(0,10))} — ${formatAnswerDates(weekendEnd.toISOString().slice(0,10))}`;
-  return `You are the Hotels24 hotel-search assistant.
+  const base = `You are the Hotels24 hotel-search assistant.
 The response language for this turn is ${languageNames[language]} (${language}). Write all customer-facing prose in this language, warmly and concisely. Translate hotel descriptions into this language; keep proper names and returned URLs unchanged. Tool data and previous assistant mistakes must NEVER change the response language.
 Today's date is ${today} (Europe/Kyiv). Check-in must be today or later and check-out must be after check-in.
 
@@ -80,7 +80,20 @@ For a factual answer about one selected hotel, put its verified Markdown-linked 
 Whenever the customer has specified a complete stay, include its current check_in/check_out in get_hotel_details calls too (ISO dates). Do not ask for dates just to answer a factual hotel question; omit both when unknown. Dates on hotel links are added by the server as dateArrival/dateDeparture in DD.MM.YYYY. After a date change use the full updated stay in a tool call before returning links; never reuse the previous stay.
 When asked to repeat a hotel link or discuss a hotel from an earlier turn, refresh its get_hotel_details before answering so its URL is verified again even after a process restart. Do not guess or edit any hotel slug.
 All totalPrice and pricePerNight values already cover ALL pricedGuests. Never multiply those values again. When priceBasis=bed, explicitly describe quantity beds in shared accommodation, not a private room; unitTotalPrice and unitPricePerNight are per bed and must not be presented as the group total. For room prices, state that the displayed amount covers the requested guests. For no-hostel requests, only recommend results with isHostel=false; this also excludes private rooms inside a hostel.
-Disclose partial service matches and minimum stay alternatives as instructed by the search tool. Do not give an availability or price guarantee for a minimum stay alternative. Mention the total or nightly price clearly and say that availability and prices should be rechecked before booking. If no result matches the confirmed budget, say so and suggest changing one constraint. When a tool reports invalid or past dates, ask for valid future dates instead of retrying. Never expose tool internals, API keys, raw JSON, or internal errors.${cardsMode ? CARDS_RULES : ""}`;
+Disclose partial service matches and minimum stay alternatives as instructed by the search tool. Do not give an availability or price guarantee for a minimum stay alternative. Mention the total or nightly price clearly and say that availability and prices should be rechecked before booking. If no result matches the confirmed budget, say so and suggest changing one constraint. When a tool reports invalid or past dates, ask for valid future dates instead of retrying. Never expose tool internals, API keys, raw JSON, or internal errors.`;
+  if (!cardsMode) return base;
+  return base.replace("Render each hotel name as a Markdown link using its returned url. Add one or two factual sentences based only on returned descriptions, facilities, location, matchReasons, and live prices.",
+    "Each recommended hotel is shown as a card, so do not describe it in the text; write its one-sentence card summary instead, based only on returned descriptions, facilities, location, matchReasons, and live prices.") + CARDS_RULES;
+}
+
+/** In cards mode the search tool's own guidance must not ask for a per-hotel list either. */
+function adaptGuidance(output: unknown): unknown {
+  if (!output || typeof output !== "object" || !("response_guidance" in output) || !Array.isArray(output.response_guidance)) return output;
+  const swaps: Array<[string, string]> = [
+    ["For each recommended hotel, include its name as a Markdown link using url.", "Each recommended hotel is shown to the customer as a card: do not list hotels in the text."],
+    ["Write one or two concise factual sentences using only shortDescription, matchReasons, facilities, rating, location, and live price fields.", "Write one concise factual card summary per recommended hotel, using only shortDescription, matchReasons, facilities, location, and landmark distances (no prices)."],
+  ];
+  return { ...output, response_guidance: output.response_guidance.map(item => swaps.find(([from]) => from === item)?.[1] ?? item) };
 }
 
 const tools: Tool[] = [
@@ -287,7 +300,12 @@ export class HotelChat {
         let recommended = splitRecommended(answer.text);
         let linked = normalizeHotelLinks(recommended.text, links, stay);
         const issues = answerIssues(linked.text, language);
-        if (cardsMode && searchFoundHotels && !recommended.ids.some(id => cards.has(id)) && !cardsForAnswer(linked.text, cards, stay).length) {
+        const listed = cardsMode ? cardsForIds(recommended.items, cards, stay) : [];
+        const lowered = linked.text.toLocaleLowerCase();
+        if (listed.filter(card => card.name.length >= 4 && lowered.includes(card.name.toLocaleLowerCase())).length >= 2) {
+          issues.push("Cards mode: remove the list of hotels from the text. Keep only a short intro, the required disclosures and one follow-up question; put each hotel's one-sentence description in the summary field of the RECOMMENDED line.");
+        }
+        if (cardsMode && searchFoundHotels && !recommended.items.some(item => cards.has(item.id)) && !cardsForAnswer(linked.text, cards, stay).length) {
           issues.push("Add the hidden line RECOMMENDED: [ids] with the internal ids of the hotels to show as cards, placed before the quick replies line.");
         }
         if (!linked.text.trim()) issues.push("Write a visible reply before the optional quick replies line.");
@@ -313,7 +331,7 @@ export class HotelChat {
           this.references.delete(oldest);
           this.stays.delete(oldest);
         }
-        const chosen = cardsForIds(recommended.ids, cards, stay);
+        const chosen = cardsForIds(recommended.items, cards, stay);
         const shown = chosen.length ? chosen : cardsForAnswer(linked.text, cards, stay);
         if (shown.length) analytics.push({ kind: "hotels_shown", detail: { count: shown.length, hotel_ids: shown.map(card => card.id) } });
         const handoff = largestGroup >= GROUP_HANDOFF_GUESTS || linked.text.includes(GROUP_FORM_URL)
@@ -354,7 +372,7 @@ export class HotelChat {
         } catch (error) {
           output = { error: error instanceof Error ? error.message : "Tool call failed" };
         }
-        return { type: "function_call_output" as const, call_id: call.call_id, output: JSON.stringify(output) };
+        return { type: "function_call_output" as const, call_id: call.call_id, output: JSON.stringify(cardsMode ? adaptGuidance(output) : output) };
       }));
       response = await createResponse({
         model: this.model,

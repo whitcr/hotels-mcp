@@ -73,6 +73,8 @@ export interface HotelCard {
   distance_m?: number;
   distance_type?: string;
   price_tier?: "economy" | "mid" | "comfort";
+  /** One factual sentence written by the assistant from returned data; shown on the card. */
+  summary?: string;
   min_stay_nights?: number;
   missing?: string[];
   badges?: CardBadge[];
@@ -129,8 +131,11 @@ function datedCard(card: HotelCard, stay?: LinkStay): HotelCard {
 }
 
 /** Cards for hotels the model chose by id; only hotels returned by tools in this conversation can appear. */
-export function cardsForIds(ids: number[], cards: Map<number, HotelCard>, stay?: LinkStay): HotelCard[] {
-  return decorateCards(ids.flatMap(id => cards.has(id) ? [datedCard(cards.get(id)!, stay)] : []).slice(0, 5));
+export function cardsForIds(items: Array<{ id: number; summary?: string }>, cards: Map<number, HotelCard>, stay?: LinkStay): HotelCard[] {
+  return decorateCards(items.flatMap(item => {
+    const card = cards.get(item.id);
+    return card ? [{ ...datedCard(card, stay), ...(item.summary ? { summary: item.summary } : {}) }] : [];
+  }).slice(0, 5));
 }
 
 /** Cards for hotels whose verified (dated) link appears in the final answer, in order of appearance. */

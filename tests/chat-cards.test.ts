@@ -24,9 +24,15 @@ describe("hotel photos", () => {
 
 describe("recommended line", () => {
   it("extracts valid ids, drops garbage and never leaves the line in the text", () => {
-    assert.deepEqual(splitRecommended("Short text.\nRECOMMENDED: [14807, 15599, 14807, -1, \"x\", 2.5]"), { text: "Short text.", ids: [14807, 15599] });
-    assert.deepEqual(splitRecommended("Text\nRECOMMENDED: [oops"), { text: "Text", ids: [] });
-    assert.deepEqual(splitRecommended("No line here."), { text: "No line here.", ids: [] });
+    assert.deepEqual(splitRecommended("Short text.\nRECOMMENDED: [14807, 15599, 14807, -1, \"x\", 2.5]"), { text: "Short text.", items: [{ id: 14807 }, { id: 15599 }] });
+    assert.deepEqual(splitRecommended("Text\nRECOMMENDED: [oops"), { text: "Text", items: [] });
+    assert.deepEqual(splitRecommended("No line here."), { text: "No line here.", items: [] });
+  });
+  it("keeps one clean sentence per hotel and drops unsafe ones", () => {
+    const result = splitRecommended('Intro.\nRECOMMENDED: [{"id":1,"summary":"  In the   center;\\nwine bar. "},{"id":2,"summary":"See https://evil.example"},{"id":3,"summary":"<b>x</b>"},{"id":4,"summary":"' + "x".repeat(300) + '"}]');
+    assert.equal(result.text, "Intro.");
+    assert.deepEqual(result.items.slice(0, 3), [{ id: 1, summary: "In the center; wine bar." }, { id: 2 }, { id: 3 }]);
+    assert.equal(result.items[3]!.summary!.length, 220);
   });
   it("is hidden from streamed text as well", () => {
     const filter = new DeltaFilter();
