@@ -18,11 +18,31 @@ export class HotelsApiClient {
     private readonly timeoutMs = 8_000,
     private readonly hostHeader?: string,
     private readonly retries = 2,
+    /** Enables a short in-memory cache for repeated identical lookups (e.g. "show more options"). */
+    private readonly cacheEnabled = false,
   ) {}
+
+  private readonly cache = new Map<string, { expires: number; value: Promise<unknown> }>();
+
+  private cached(key: string, ttlMs: number, load: () => Promise<unknown>): Promise<unknown> {
+    if (!this.cacheEnabled || ttlMs <= 0) return load();
+    const now = Date.now();
+    const hit = this.cache.get(key);
+    if (hit && hit.expires > now) return hit.value;
+    const value = load();
+    this.cache.set(key, { expires: now + ttlMs, value });
+    // A failed lookup must never be served again.
+    value.catch(() => { if (this.cache.get(key)?.value === value) this.cache.delete(key); });
+    if (this.cache.size > 300) {
+      for (const [entry, record] of this.cache) if (record.expires <= now) this.cache.delete(entry);
+      while (this.cache.size > 300) this.cache.delete(this.cache.keys().next().value!);
+    }
+    return value;
+  }
 
   async resolveOperatorId(token: string): Promise<number | null> {
     if (token.length !== 32 || !/^[a-f0-9]{32}$/.test(token)) return null;
-    const payload = await this.get("/info/crmtoken/operator", { token });
+    const payload = await this.get("/info/crmtoken/operator", 0, { token });
     const identity = payload && typeof payload === "object" && "data" in payload ? payload.data : payload;
     if (!identity || typeof identity !== "object" || !("operator_id" in identity)) {
       throw new HotelsApiError("Hotels API returned invalid operator identity");
@@ -36,7 +56,7 @@ export class HotelsApiClient {
   }
 
   resolveDestination(query: string, language: string): Promise<unknown> {
-    return this.get("/search/hotel-city-region", { s: query, lang: language });
+    return this.get("/search/hotel-city-region", 300_000, { s: query, lang: language });
   }
 
   getAvailability(params: {
@@ -49,11 +69,13 @@ export class HotelsApiClient {
     stars?: number[];
     hotelTypes?: number[];
     excludeHostels?: boolean;
+    /** Skip the cache: a customer-facing re-check must be live. */
+    fresh?: boolean;
   }): Promise<unknown> {
     // `/availability/blocks` is an obsolete production route and currently
     // fails with MongoDB `bad sort specification`. This is the established
     // public legacy availability route used for live hotel/room data.
-    return this.get("/legacy/getBlockAvailability", {
+    return this.get("/legacy/getBlockAvailability", params.fresh ? 0 : 60_000, {
       hotel_ids: params.hotelIds,
       city_ids: params.cityIds,
       Region_ids: params.regionIds,
@@ -67,14 +89,19 @@ export class HotelsApiClient {
   }
 
   getHotelDetails(hotelIds: number[], language: string): Promise<unknown> {
-    return this.get("/hotel/hotel-info", {
+    return this.get("/hotel/hotel-info", 600_000, {
       hotel_ids: hotelIds,
       lang: language,
       limit: Math.min(hotelIds.length, 50),
     });
   }
 
-  private async get(path: string, query: Record<string, QueryValue>): Promise<unknown> {
+  private get(path: string, ttlMs: number, query: Record<string, QueryValue>): Promise<unknown> {
+    const url = this.buildUrl(path, query);
+    return this.cached(url.href, ttlMs, () => this.fetchJson(url));
+  }
+
+  private buildUrl(path: string, query: Record<string, QueryValue>): URL {
     const url = new URL(`${this.baseUrl}${path}`);
     for (const [key, value] of Object.entries(query)) {
       if (value === undefined || value === null || value === "") continue;
@@ -84,7 +111,10 @@ export class HotelsApiClient {
         url.searchParams.set(key, String(value));
       }
     }
+    return url;
+  }
 
+  private async fetchJson(url: URL): Promise<unknown> {
     let lastError: HotelsApiError | undefined;
     for (let attempt = 0; attempt <= this.retries; attempt += 1) {
       const controller = new AbortController();

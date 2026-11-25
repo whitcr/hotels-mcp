@@ -11,7 +11,7 @@ import { HotelsApiClient } from "./clients/hotels-api.client.js";
 import { loadConfig } from "./config.js";
 import { registerHotelTools } from "./tools/index.js";
 import { bigQueryWriter, logConfig } from "./logging/bigquery.js";
-import { makeEvent, telemetrySchema } from "./logging/events.js";
+import { makeEvent, telemetrySchema, uiEventSchema } from "./logging/events.js";
 import { ChatLogQueue } from "./logging/queue.js";
 
 const config = loadConfig();
@@ -104,16 +104,20 @@ function requireAuth(request: Request, response: Response, next: NextFunction): 
   response.status(401).set("WWW-Authenticate", "Bearer").json({ error: "Unauthorized" });
 }
 
+// One shared client: its short-lived cache must survive across stateless /mcp requests.
+const hotelsApi = new HotelsApiClient(
+  config.hotelsApiUrl,
+  config.hotelsApiKey,
+  config.requestTimeoutMs,
+  config.hotelsApiHost,
+  config.requestRetries,
+  true,
+);
+
 function createServer(): McpServer {
   const server = new McpServer({ name: "hotels24", version: "0.1.0" });
   registerHotelTools(server, {
-    client: new HotelsApiClient(
-      config.hotelsApiUrl,
-      config.hotelsApiKey,
-      config.requestTimeoutMs,
-      config.hotelsApiHost,
-      config.requestRetries,
-    ),
+    client: hotelsApi,
     maxResults: config.maxResults,
     hotelPublicBaseUrl: config.hotelPublicBaseUrl,
   });
@@ -217,7 +221,12 @@ app.post("/chat", requireAllowedOrigin, rateLimit, requireAuth, async (request, 
   const startedAt = Date.now();
   await chatLogs?.enqueue(makeEvent(context, { event_type: "user_message", role: visitorRole, message: telemetry?.message || message }));
   try {
-    const { usage, ...result } = await hotelChat.respond(message, previousResponseId, telemetry?.language);
+    const { usage, analytics, ...result } = await hotelChat.respond(message, previousResponseId, telemetry?.language);
+    for (const item of analytics) {
+      await chatLogs?.enqueue(makeEvent({ ...context, chat_language: result.language }, {
+        event_type: item.kind, role: "assistant", message: JSON.stringify(item.detail),
+      }));
+    }
     await chatLogs?.enqueue(makeEvent({...context, chat_language:result.language}, {
       event_type: "assistant_message", role: "assistant", message: result.message,
       response_ms: Date.now() - startedAt, model: config.openAiModel, ...usage,
@@ -231,6 +240,21 @@ app.post("/chat", requireAllowedOrigin, rateLimit, requireAuth, async (request, 
     }));
     next(error);
   }
+});
+
+// Funnel events from the chat widget (clicks). Server-to-server, like /chat; no personal data accepted.
+app.post("/chat/event", requireAllowedOrigin, rateLimit, requireAuth, async (request, response) => {
+  const parsed = uiEventSchema.safeParse(request.body);
+  if (!parsed.success) {
+    response.status(400).json({ error: "invalid_event", request_id: response.locals.requestId });
+    return;
+  }
+  const { chat_id, type, hotel_id, environment } = parsed.data;
+  await chatLogs?.enqueue(makeEvent({
+    chat_id, request_id: response.locals.requestId as string, environment: environment || logging?.environment || "local",
+    chat_language: null, chat_context: null,
+  }, { event_type: "ui_click", message: JSON.stringify({ type, ...(hotel_id ? { hotel_id } : {}) }) }));
+  response.status(202).json({ accepted: true });
 });
 
 app.post("/mcp", requireAllowedOrigin, rateLimit, requireAuth, async (request, response) => {

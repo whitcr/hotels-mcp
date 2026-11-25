@@ -22,6 +22,7 @@ export function registerCheckAvailability(server: McpServer, { client }: ToolDep
       checkIn: args.check_in,
       checkOut: args.check_out,
       guests: group ? 1 : args.guests,
+      fresh: true,
     }), args.guests, group);
     return {
       currency: "UAH",

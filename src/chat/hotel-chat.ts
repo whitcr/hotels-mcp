@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import type { ResponseCreateParamsNonStreaming, ResponseFunctionToolCall, Tool } from "openai/resources/responses/responses";
 import { answerIssues, detectMessageLanguage, formatAnswerDates, languageNames, validLanguage, type ChatLanguage } from "./language.js";
-import { collectHotelLinks, normalizeHotelLinks, readLinkStay, type LinkStay } from "./verified-links.js";
+import { cardsForAnswer, collectHotelCards, collectHotelLinks, normalizeHotelLinks, readLinkStay, type HotelCard, type LinkStay } from "./verified-links.js";
 
 import { todayInKyiv } from "../today.js";
 import { splitQuickReplies } from "./quick-replies.js";
@@ -26,21 +26,25 @@ For factual questions about a specific hotel, use get_hotel_details without aski
 Before searching across hotels with search_hotels, you MUST know all of these values:
 1. destination city;
 2. check-in and check-out dates;
-3. total number of guests;
-4. maximum budget in UAH;
-5. whether that budget is for the entire stay or per night. For exactly ONE NIGHT these are the same amount: set budget_type to total without asking this redundant question. If the user already said "за весь період", "за все", "за весь период", "total", "за ніч", "за ночь" or "per night", retain that meaning and do not ask again. For genuinely ambiguous multi-night budgets, clarify once.
+3. total number of guests.
+The budget is OPTIONAL. If the customer stated a maximum budget in UAH, also determine whether it is for the entire stay or per night. For exactly ONE NIGHT these are the same amount: set budget_type to total without asking this redundant question. If the user already said "за весь період", "за все", "за весь период", "total", "за ніч", "за ночь" or "per night", retain that meaning and do not ask again. For genuinely ambiguous multi-night budgets, clarify once. If the budget is the only thing missing, do NOT ask for it first: search without budget_max right away, present the economy, mid-range and comfort options the tool returns, and then ask which price level suits the customer.
 
-If anything is missing or ambiguous, ask one concise follow-up question that gathers all missing values. Never invent or alter dates, guest count, currency, or budget. When the user provides a day and month without a year, deterministically choose the nearest occurrence that is today or in the future. Use the current year if that calendar date has not passed; otherwise use the next year. For a date range, preserve its order and duration: resolve check-in to its nearest future occurrence, then choose the earliest check-out occurrence strictly after it (including the following year for a range crossing New Year). Tell the user the resolved full dates in the final answer. Ask for the year only if the supplied calendar date itself is invalid or genuinely cannot be determined. Never use a past check-in date. Resolve a city with resolve_destination before search_hotels. city_id must be the id of a result of type city (for a result of type hotel use its cityId, never the hotel id). If resolution is ambiguous, ask the user to choose. Use ISO YYYY-MM-DD dates in tool calls.
+If a required value is missing or ambiguous, ask one concise follow-up question that gathers all missing required values. Never invent or alter dates, guest count, currency, or budget. When the user provides a day and month without a year, deterministically choose the nearest occurrence that is today or in the future. Use the current year if that calendar date has not passed; otherwise use the next year. For a date range, preserve its order and duration: resolve check-in to its nearest future occurrence, then choose the earliest check-out occurrence strictly after it (including the following year for a range crossing New Year). Tell the user the resolved full dates in the final answer. Ask for the year only if the supplied calendar date itself is invalid or genuinely cannot be determined. Never use a past check-in date. Resolve a city with resolve_destination before search_hotels. city_id must be the id of a result of type city (for a result of type hotel use its cityId, never the hotel id). If resolution is ambiguous, ask the user to choose. Use ISO YYYY-MM-DD dates in tool calls.
 Search immediately when required details are known. Never ask to reconfirm a complete request. Do not ask for a departure date already supplied or derivable from a stated number of nights and arrival. For an unspecified swimming pool ask indoor or outdoor (or either) once, together with any missing details. Use pool_type and never count a sauna plunge pool. If the customer has no pool type preference use either. Pass other service preferences as individual short facility labels in the response language. Do not put the dates, group size, budget, pool or landmarks in preferences.
 For a stated price range use both budget_min and budget_max, without asking for another maximum. For a multi-night range without a unit, use per night and say you interpreted it that way. After showing options ask whether the prices suit them or they want to see a couple of more expensive choices. Only search above the range after the customer agrees.
 For groups, show different supported accommodation types and verified room or bed quantities. For a group of 10 or more, or a group whose full size cannot be reliably priced, provide the Hotels24 group form https://hotels24.ua/uk/groups/ and the Hotels24 call center +380 98 039 33 49. For more than 60 guests, share the form and phone directly. Never solicit contact details in chat.
 For a named point not covered by a landmark category, use proximity.type=landmark and its exact useful name. Use only matching Hotels24 landmark tags and their approximate distances. When the customer provides exact map coordinates, use proximity.type=map_point and copy the coordinates exactly. Do not invent coordinates or claim a street address was geocoded. If an address cannot be matched, ask for a nearby landmark or coordinates. Descriptions can support qualitative claims, never a measured distance. A short yes/так/да followed by missing details confirms the concrete dates and radius in your last question; do not request confirmation again. For "city center" without a radius use downtown within 3000 meters, disclose this interpretation, and search without an extra permission question. Never broaden an explicit radius.
-Only while another required detail is missing, for "this weekend" without exact dates, propose the concrete range ${weekend} and ask for its confirmation in the SAME question as the missing budget. Do not merely ask the customer to supply dates from scratch. Example: customer asks for Kyiv this weekend, center, two guests; ask "Confirm ${weekend}; what is the maximum budget in UAH per night or total?" and disclose the default 3 km from the center without asking to confirm the radius. If the next message says "Yes, 1000 UAH per night", immediately resolve Kyiv and search using the proposed dates, two guests, 1000 per night and downtown within 3000 m. Do not ask a third question.
+Only while another required detail is missing, for "this weekend" without exact dates, propose the concrete range ${weekend} and ask for its confirmation, together with any other missing required value. Do not merely ask the customer to supply dates from scratch. Example: customer asks for Kyiv this weekend, center, two guests; ask "Do these dates suit you: ${weekend}?" with the quick replies "Yes" and "Other dates", and disclose the default 3 km from the center without asking to confirm the radius. If the next message says "Yes" (optionally with a budget such as "1000 UAH per night"), immediately resolve Kyiv and search using the proposed dates, two guests, the budget if given, and downtown within 3000 m. Do not ask a third question.
 If all other fields are known, resolve "this weekend" to the stated concrete range and search directly.
 There is no exchange-rate tool. For any non-UAH budget, ask the customer for the maximum in UAH. Never offer to look up a current rate, convert it yourself, or invent a conversion, even if asked.
 
+Guest context: for "family", "with children" or "kids" ask the children's ages (together with other missing values) and mention that it can affect the room type. Prefer family-friendly facilities for families, closeness to the center and the railway station for business trips, and different accommodation types for friend groups. Never invent facts about the guests.
+When the customer asks to compare hotels, give a compact comparison from returned data only: one short line per hotel with price, distance to the requested landmark if returned, and its main difference. End with a clear recommendation tied to the customer's stated priorities.
+When search results carry priceTier, explain that they show three price levels. If suggestions are returned for an empty result, offer that exact change as the first quick reply.
+
 Quick replies for the chat interface:
 - When your answer asks the customer to choose or gives them a useful next step, append one separate final line exactly like QUICK_REPLIES: ["First reply","Second reply"]. This line is hidden from the customer. Write 2–4 short, distinct messages in the answer language, each at most 120 characters. The customer sees and sends the same text with one click. Do not include URLs, HTML, markdown, or contact/payment details.
+- For the very first question about a trip offer concrete starting points: dates such as "This weekend", "Next week", "Other dates"; guests such as "1 guest", "2 guests", "3–4 guests"; budget price levels only after the first results. Use only options that fit the question you asked.
 - Tie every choice to what you just asked or offered. Example choices for a pool: indoor, outdoor, either. For an ambiguous budget unit, reply with "Per night" or "For the whole stay". For one missing field such as dates, city, guest count or budget, offer sensible explicit choices the customer can select, while leaving free text available. For multiple missing fields, offer choices for one field or complete answers where the values were already proposed in the conversation.
 - When presenting hotels, offer only relevant next steps such as asking for more options within the same budget, comparing the shown hotels, or explicitly requesting higher-priced options after the customer has been offered that choice. Where there is no useful follow-up, omit the line. Never embed assistant instructions or pretend a choice confirms a booking.
 - On a new turn, treat QUICK_REPLIES lines in earlier assistant messages as previous UI suggestions only. Only the customer message indicates which option was chosen.
@@ -85,7 +89,7 @@ const tools: Tool[] = [
   {
     type: "function",
     name: "search_hotels",
-    description: "Search live hotel availability only after all required trip and budget details are known.",
+    description: "Search live hotel availability after city, dates and guest count are known. A budget is optional.",
     strict: false,
     parameters: {
       type: "object",
@@ -96,7 +100,7 @@ const tools: Tool[] = [
         check_out: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
         guests: { type: "integer", minimum: 1, maximum: 60 },
         budget_min: { type: "number", minimum: 0, description: "Lower end of the customer's stated price range." },
-        budget_max: { type: "number", exclusiveMinimum: 0 },
+        budget_max: { type: "number", exclusiveMinimum: 0, description: "Maximum budget in UAH. Omit when the customer gave no budget; the tool then returns economy, mid and comfort options." },
         budget_type: { type: "string", enum: ["total", "per_night"] },
         budget_currency: { type: "string", enum: ["UAH"] },
         stars: { type: "array", items: { type: "integer", minimum: 1, maximum: 5 } },
@@ -127,7 +131,7 @@ const tools: Tool[] = [
         language: { type: "string", enum: ["uk", "ru", "en"] },
         limit: { type: "integer", minimum: 1, maximum: 10 },
       },
-      required: ["city_id", "check_in", "check_out", "guests", "budget_max", "budget_type", "budget_currency", "language"],
+      required: ["city_id", "check_in", "check_out", "guests", "language"],
     },
   },
   {
@@ -166,12 +170,26 @@ const tools: Tool[] = [
   },
 ];
 
+export const GROUP_FORM_URL = "https://hotels24.ua/uk/groups/";
+export const CALL_CENTER_PHONE = "+380 98 039 33 49";
+const GROUP_HANDOFF_GUESTS = 10;
+
+/** Privacy-safe funnel facts about one turn; never contains message text. */
+export interface ChatAnalytics {
+  kind: "search_result" | "hotels_shown";
+  detail: Record<string, string | number | boolean | number[]>;
+}
+
 export interface ChatResult {
   response_id: string;
   message: string;
   language: ChatLanguage;
   usage: ChatUsage;
   quick_replies: string[];
+  hotel_cards: HotelCard[];
+  /** Set when a person should take over: large groups, with the official form and call center. */
+  handoff: { reason: "large_group"; form_url: string; phone: string } | null;
+  analytics: ChatAnalytics[];
 }
 
 export class HotelChat {
@@ -214,6 +232,9 @@ export class HotelChat {
     const policy = instructions(language);
     const metadata = (): Record<string, string> => ({ chat_language: language, ...(stay ?? {}) });
     const links = new Map(previousResponseId ? this.references.get(previousResponseId) : undefined);
+    const cards = new Map<number, HotelCard>();
+    const analytics: ChatAnalytics[] = [];
+    let largestGroup = 0;
     let response = await createResponse({
       model: this.model,
       instructions: policy,
@@ -252,7 +273,14 @@ export class HotelChat {
           this.references.delete(oldest);
           this.stays.delete(oldest);
         }
-        return { response_id: response.id, message: formatAnswerDates(linked.text), quick_replies: answer.quickReplies, language, usage: usage.snapshot() };
+        const shown = cardsForAnswer(linked.text, cards, stay);
+        if (shown.length) analytics.push({ kind: "hotels_shown", detail: { count: shown.length, hotel_ids: shown.map(card => card.id) } });
+        const handoff = largestGroup >= GROUP_HANDOFF_GUESTS || linked.text.includes(GROUP_FORM_URL)
+          ? { reason: "large_group" as const, form_url: GROUP_FORM_URL, phone: CALL_CENTER_PHONE } : null;
+        return {
+          response_id: response.id, message: formatAnswerDates(linked.text), quick_replies: answer.quickReplies, language,
+          usage: usage.snapshot(), hotel_cards: shown, handoff, analytics,
+        };
       }
       const outputs = await Promise.all(calls.map(async (call) => {
         let output: unknown;
@@ -269,8 +297,17 @@ export class HotelChat {
           // Details dates are conversation context; the read-only MCP detail tool needs only IDs/language.
           if (call.name === "get_hotel_details") { delete args.check_in; delete args.check_out; }
           if (call.name !== "check_hotel_availability") args.language = language;
+          if (typeof args.guests === "number" && Number.isFinite(args.guests)) largestGroup = Math.max(largestGroup, args.guests);
           output = await this.callTool(call.name, args);
           collectHotelLinks(output, links);
+          collectHotelCards(output, cards);
+          if (call.name === "search_hotels" && output && typeof output === "object" && "result_count" in output) {
+            analytics.push({ kind: "search_result", detail: {
+              result_count: Number(output.result_count), guests: Number(args.guests) || 0,
+              has_budget: args.budget_max !== undefined, has_proximity: Boolean(args.proximity),
+              has_preferences: Array.isArray(args.preferences) && args.preferences.length > 0,
+            } });
+          }
         } catch (error) {
           output = { error: error instanceof Error ? error.message : "Tool call failed" };
         }

@@ -5,19 +5,20 @@ import { searchHotelsInput, searchHotelsOutput } from "../schemas/hotel.schemas.
 import { runTool } from "./tool.helpers.js";
 import type { ToolDependencies } from "./tool.types.js";
 import { findProximity, mentionsRailway } from "./proximity.js";
+import { matchDescription, matchFacility } from "./facility-match.js";
 import { validateStayDates } from "./stay-dates.js";
 import type { HotelAvailability } from "../types.js";
 
 export function registerSearchHotels(server: McpServer, { client, maxResults, hotelPublicBaseUrl }: ToolDependencies): void {
   server.registerTool("search_hotels", {
     title: "Search available hotels",
-    description: "Search current Hotels24 availability for a resolved city. REQUIRED before calling: city, check-in date, check-out date, guest count, maximum budget, budget type, and UAH currency. If any required value is missing or ambiguous, ask the customer a concise clarification question and do not call this tool. Returns absolute hotel links, factual short descriptions, matching facilities, and compact room options; never claim a preference match unless supported by returned fields.",
+    description: "Search current Hotels24 availability for a resolved city. REQUIRED before calling: city, check-in date, check-out date and guest count. A maximum budget (with budget type) is optional: without it the tool returns economy, mid and comfort options. If a required value is missing or ambiguous, ask the customer a concise clarification question and do not call this tool. Returns absolute hotel links, factual short descriptions, matching facilities, and compact room options; never claim a preference match unless supported by returned fields.",
     inputSchema: searchHotelsInput,
     outputSchema: searchHotelsOutput,
     annotations: { readOnlyHint: true, openWorldHint: false },
   }, (args) => runTool(async () => {
     validateStayDates(args.check_in, args.check_out);
-    if ((args.budget_min ?? 0) > args.budget_max) throw new Error("Budget minimum exceeds maximum");
+    if ((args.budget_min ?? 0) > (args.budget_max ?? Infinity)) throw new Error("Budget minimum exceeds maximum");
     const nights = (Date.parse(args.check_out) - Date.parse(args.check_in)) / 86_400_000;
     const group = args.guests >= 6;
     const poolPattern = /басейн|бассейн|\bpool\b/iu;
@@ -29,7 +30,7 @@ export function registerSearchHotels(server: McpServer, { client, maxResults, ho
     if (!args.proximity && mentionsRailway([args.customer_request, ...args.preferences].join(" "))) {
       throw new Error("Railway location constraint detected. Retry with proximity.type=railway and the user's radius in meters; for unspecified 'near', use 3000 and disclose it. Never return a citywide budget-only list.");
     }
-    const availability = filterAvailabilityByBudget(mapAvailability(await client.getAvailability({
+    const allAvailability = mapAvailability(await client.getAvailability({
       cityIds: [args.city_id],
       checkIn: args.check_in,
       checkOut: args.check_out,
@@ -37,16 +38,26 @@ export function registerSearchHotels(server: McpServer, { client, maxResults, ho
       stars: args.stars,
       hotelTypes: args.hotel_types,
       excludeHostels: args.exclude_hostels,
-    }), args.guests, group), args.budget_max, args.budget_type, args.budget_min).filter((hotel) => !excluded.has(hotel.hotelId));
+    }), args.guests, group).filter((hotel) => !excluded.has(hotel.hotelId));
+    const budgetLimit = args.budget_max ?? Infinity;
+    const priceOf = (room: HotelAvailability["rooms"][number]) => args.budget_type === "per_night" ? room.pricePerNight : room.totalPrice;
+    const availability = filterAvailabilityByBudget(allAvailability, budgetLimit, args.budget_type, args.budget_min);
+    const budget = { min: args.budget_min, max: args.budget_max, type: args.budget_type, currency: args.budget_currency };
     if (!availability.length) {
+      // Tell the customer which single change would help: the cheapest offer above the budget.
+      const above = allAvailability.flatMap(hotel => hotel.rooms.map(priceOf)).filter((price): price is number => price !== undefined && price > budgetLimit);
+      const suggestions = above.length
+        ? [{ kind: "increase_budget" as const, budget_needed: Math.min(...above), budget_type: args.budget_type }] : [];
       return {
         currency: "UAH",
         check_in: args.check_in,
         check_out: args.check_out,
         customer_request: args.customer_request ?? null,
-        budget: { min: args.budget_min, max: args.budget_max, type: args.budget_type, currency: args.budget_currency },
+        budget,
         result_count: 0,
-        response_guidance: ["Tell the customer that no new live availability matched the city, dates, guest count, filters, excluded hotels, and confirmed budget. Do not repeat excluded hotels. Suggest changing one constraint; do not silently ignore the budget."],
+        suggestions,
+        response_guidance: ["Tell the customer that no new live availability matched the city, dates, guest count, filters, excluded hotels, and confirmed budget. Do not repeat excluded hotels. Suggest changing one constraint; do not silently ignore the budget.",
+          ...(suggestions.length ? ["If suggestions contains increase_budget, say the cheapest available option costs about budget_needed UAH (in the same unit as the budget) and offer to search with that budget."] : [])],
         hotels: [],
       };
     }
@@ -57,8 +68,7 @@ export function registerSearchHotels(server: McpServer, { client, maxResults, ho
     // The upstream order is arbitrary: rank by price first so the bounded pool is
     // deterministic and never drops the cheapest matches. Hotels with location or
     // service filters need many more inspected candidates, since most are discarded.
-    const cheapest = (hotel: HotelAvailability) => Math.min(...hotel.rooms.map(room =>
-      (args.budget_type === "per_night" ? room.pricePerNight : room.totalPrice) ?? Infinity));
+    const cheapest = (hotel: HotelAvailability) => Math.min(...hotel.rooms.map(room => priceOf(room) ?? Infinity));
     const byPrice = (a: HotelAvailability, b: HotelAvailability) => cheapest(a) - cheapest(b);
     const candidates = [...bookable.sort(byPrice), ...availability.filter(hotel => !bookableIds.has(hotel.hotelId)).sort(byPrice)]
       .slice(0, inspectMore ? 400 : Math.min(maxResults * 2, 50));
@@ -81,7 +91,6 @@ export function registerSearchHotels(server: McpServer, { client, maxResults, ho
     const relevant = candidates.filter(hotel => eligibleIds.has(hotel.hotelId));
     const preferences = args.preferences.filter(preference => !(args.pool_type && poolPattern.test(preference)));
     const limit = Math.min(args.limit, maxResults);
-    const normalize = (text: string) => text.toLocaleLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
     const matching = (shortStay: boolean) => {
       const entries = relevant.flatMap(hotel => {
         const rooms = hotel.rooms.filter(room => ((room.minNights ?? 1) > nights) === shortStay);
@@ -90,18 +99,23 @@ export function registerSearchHotels(server: McpServer, { client, maxResults, ho
       const results = mergeSearchResults(entries, eligible, args.check_in, args.check_out, entries.length);
       return results.map(result => {
         const facts = [...result.facilities, ...result.rooms.flatMap(room => room.facilities)];
-        const matched = preferences.map(preference => {
-          const query = normalize(preference);
-          return query.length >= 2 ? facts.find(fact => normalize(fact).includes(query)) : undefined;
-        });
+        const matched = preferences.map(preference => matchFacility(preference, facts));
+        // Description evidence is softer than a facility: only for what facilities did not confirm.
+        const mentioned = preferences.filter((preference, index) => !matched[index] && matchDescription(preference, result.description));
+        const reach = args.proximity?.max_distance_m;
+        const rankScore = Math.round(((result.stars ?? 0) * 0.5
+          + (result.photos.length ? 0.5 : 0) + (result.description ? 0.5 : 0)
+          + (result.locationMatch && reach ? 2 * Math.max(0, 1 - result.locationMatch.distanceMeters / reach) : 0)) * 100) / 100;
         return {
           ...result,
           matchReasons: [...new Set(matched.filter((fact): fact is string => Boolean(fact)))],
-          matchScore: matched.filter(Boolean).length + (args.pool_type ? 1 : 0),
-          missingPreferences: preferences.filter((_, index) => !matched[index]),
+          descriptionMatches: mentioned,
+          matchScore: matched.filter(Boolean).length + mentioned.length + (args.pool_type ? 1 : 0),
+          rankScore,
+          missingPreferences: preferences.filter((preference, index) => !matched[index] && !mentioned.includes(preference)),
         };
       }).filter(hotel => !preferences.length || hotel.matchScore > 0)
-        .sort((a, b) => b.matchScore - a.matchScore);
+        .sort((a, b) => b.matchScore - a.matchScore || b.rankScore - a.rankScore);
     };
     let hotels = matching(false);
     if (!hotels.length) {
@@ -143,15 +157,36 @@ export function registerSearchHotels(server: McpServer, { client, maxResults, ho
     if (hotels.some(hotel => hotel.missingPreferences?.length === 0)) {
       hotels = hotels.filter(hotel => hotel.missingPreferences?.length === 0);
     }
+    if (!args.budget_max && hotels.length > 3) {
+      // No budget given: show an economy, a mid-range and a comfort option instead of one price band.
+      const price = (hotel: (typeof hotels)[number]) => hotel.totalPrice ?? Infinity;
+      const byPrice = [...hotels].sort((a, b) => price(a) - price(b));
+      const third = Math.ceil(byPrice.length / 3);
+      hotels = (["economy", "mid", "comfort"] as const).flatMap((tier, index) => {
+        const chunk = new Set(byPrice.slice(index * third, (index + 1) * third).map(hotel => hotel.id));
+        const best = hotels.find(hotel => chunk.has(hotel.id));
+        return best ? [{ ...best, priceTier: tier }] : [];
+      });
+    }
     hotels = hotels.slice(0, limit);
+    const suggestions: Array<{ kind: "widen_radius"; distance_m: number }> = [];
+    if (!hotels.length && args.proximity && ["railway", "bus", "airport", "subway", "beach", "downtown", "lift"].includes(args.proximity.type)) {
+      const distances = details.flatMap(hotel => (hotel.landmarks ?? []).filter(place => place.type === args.proximity!.type).map(place => place.distanceMeters));
+      if (distances.length) suggestions.push({ kind: "widen_radius", distance_m: Math.min(...distances) });
+    }
     return {
       currency: "UAH",
       check_in: args.check_in,
       check_out: args.check_out,
       customer_request: args.customer_request ?? null,
-      budget: { min: args.budget_min, max: args.budget_max, type: args.budget_type, currency: args.budget_currency },
+      budget,
       result_count: hotels.length,
+      suggestions,
       response_guidance: [
+        ...(!args.budget_max ? ["No budget was given. Hotels carry priceTier economy/mid/comfort: present them as three price levels with their real prices, then ask which level suits the customer."] : []),
+        ...(suggestions.length ? ["If suggestions contains widen_radius, say the nearest confirmed match is about distance_m meters away and ask whether to widen the search; do not widen silently."] : []),
+        "If descriptionMatches is nonempty, say the hotel description mentions that wish, but do NOT claim it as a confirmed service or facility.",
+        "Mention how few rooms remain only if a returned room has placesAvailable of 1-3; never invent urgency or scarcity.",
         "All totalPrice and pricePerNight amounts already cover pricedGuests. Never multiply them again. priceBasis=bed means quantity beds in shared accommodation, NOT a private room; explicitly disclose that when recommending it. unit prices are per room/bed, not the group total.",
         ...(args.exclude_hostels ? ["Hostel properties and properties with unknown type are excluded, including private rooms in hostels. A bounded candidate pool was inspected; empty results do not prove no hotels exist in the entire city."] : []),
         ...(args.proximity ? [

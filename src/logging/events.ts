@@ -11,13 +11,21 @@ export const telemetrySchema = z.object({
   operator_token: z.string().length(32).regex(/^[a-f0-9]{32}$/i).optional(),
 });
 
+/** Frontend funnel events: what was clicked, never free text or personal data. */
+export const uiEventSchema = z.object({
+  chat_id: z.string().regex(/^[a-f0-9-]{24,36}$/i),
+  type: z.enum(["hotel_click", "quick_reply_click", "handoff_click", "hotel_card_click"]),
+  hotel_id: z.number().int().positive().optional(),
+  environment: z.enum(["prod", "stage", "local"]).optional(),
+});
+
 export interface ChatEvent {
   event_id: string;
   created_at: string;
   chat_id: string;
   request_id: string;
   environment: string;
-  event_type: "user_message" | "assistant_message" | "error" | "integration_test";
+  event_type: "user_message" | "assistant_message" | "error" | "integration_test" | "search_result" | "hotels_shown" | "ui_click";
   role: VisitorRole | "assistant" | null;
   message: string | null;
   chat_language: string | null;

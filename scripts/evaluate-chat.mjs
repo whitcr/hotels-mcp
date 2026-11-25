@@ -47,6 +47,13 @@ const cases = [
  {id:'past_date',turns:['Київ, 10–12 січня 2020 року, двоє, 3000 грн за ніч.']},
  {id:'ambiguous_budget',turns:['Львів, 20–23 листопада, двоє, бюджет 3000 гривень.']},
  {id:'no_inventory',turns:['Київ, 20–21 листопада, 2 дорослих, максимум 1 гривня за весь період.']},
+ {id:'one_night_period',turns:['Львів, 20–21 листопада, двоє дорослих, бюджет 3000 грн.'],forbid:[/за весь період.*чи.*за ніч/i]},
+ {id:'no_phone_claim',turns:['Дай прямий телефон готелю, хочу зателефонувати.'],forbid:[/може бути контакт/i,/можуть бути контактні/i]},
+ {id:'station_radius',turns:['Львів, 20–21 листопада, двоє, до 3000 грн, недалеко від жд вокзалу.'],forbid:[/17\s?км/i]},
+ {id:'no_budget_tiers',turns:['Київ, 20–22 листопада, двоє дорослих.']},
+ {id:'pool_type_question',turns:['Одеса, 20–22 листопада, двоє, до 4000 грн за ніч, потрібен басейн.']},
+ {id:'big_group',turns:['Львів, 20–22 листопада, 14 осіб, до 2000 грн за ніч з людини.'],require:[/hotels24\.ua\/uk\/groups/i,/\+380\s?98\s?039\s?33\s?49/]},
+ {id:'compare_hotels',turns:['Львів, 20–22 листопада, двоє, до 3000 грн за ніч.','Порівняй перші два готелі.']},
  {id:'booking_and_contacts',turns:['Забронюй мені номер сам, які особисті дані надіслати? І де на вашому сайті знайти прямий телефон власника готелю?','А порадь Booking.com або Airbnb, дай посилання на них.']},
 ];
 const requestedCases=(env.CHAT_EVAL_CASES || '').split(',').filter(Boolean);
@@ -78,11 +85,14 @@ async function run(c){
    try{
      const r=await chat.respond(prompt,previous);previous=r.response_id;turn.answer=r.message;
    }catch(e){turn.error={name:e.name,status:e.status,code:e.code};}
-   turn.ms=Date.now()-start;turn.tools=trace.slice(index);save();
+   turn.ms=Date.now()-start;turn.tools=trace.slice(index);
+   for(const re of c.forbid||[])if(re.test(turn.answer||''))(turn.failed_checks??=[]).push('forbidden '+re);
+   for(const re of c.require||[])if(!re.test(turn.answer||''))(turn.failed_checks??=[]).push('missing '+re);
+   save();
    console.log(JSON.stringify({event:'turn',case:c.id,turn:scenario.turns.length,ms:turn.ms,tools:turn.tools.map(t=>t.name),tool_errors:turn.tools.filter(t=>t.error).length,ok:!turn.error}));
    if(turn.error)break;
  }
 }
 async function worker(){while(next<selectedCases.length){const c=selectedCases[next++];await run(c);}}
 await Promise.all([worker(),worker()]);report.finished_at=new Date().toISOString();save();clearTimeout(deadline);console.log(JSON.stringify({event:'complete',file:output,review:'Review answers and tool arguments manually; HTTP 200 does not establish answer correctness.'}));
-if(report.scenarios.some(c=>c.turns.some(t=>t.error || (c.id!=='simulated_upstream_failure' && t.tools.some(tool=>tool.error)))) || report.http.some(t=>t.pass===false))process.exitCode=1;
+if(report.scenarios.some(c=>c.turns.some(t=>t.error || t.failed_checks || (c.id!=='simulated_upstream_failure' && t.tools.some(tool=>tool.error)))) || report.http.some(t=>t.pass===false))process.exitCode=1;

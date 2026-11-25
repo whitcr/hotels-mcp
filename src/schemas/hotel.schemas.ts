@@ -18,9 +18,9 @@ export const searchHotelsInput = {
   check_out: dateSchema,
   guests: z.number().int().min(1).max(60),
   budget_min: z.number().nonnegative().optional(),
-  budget_max: z.number().positive().describe("Maximum customer budget in UAH."),
-  budget_type: z.enum(["total", "per_night"]).describe("Whether budget_max applies to the entire stay or one night."),
-  budget_currency: z.literal("UAH").describe("The legacy API returns UAH. Ask the customer to confirm a UAH budget; do not convert implicitly."),
+  budget_max: z.number().positive().optional().describe("Maximum customer budget in UAH. Omit only when the customer gave no budget: the tool then returns options in three price tiers."),
+  budget_type: z.enum(["total", "per_night"]).default("total").describe("Whether budget_max applies to the entire stay or one night."),
+  budget_currency: z.literal("UAH").default("UAH").describe("The legacy API returns UAH. Ask the customer to confirm a UAH budget; do not convert implicitly."),
   stars: z.array(z.number().int().min(1).max(5)).max(5).optional(),
   hotel_types: z.array(z.number().int().positive()).max(20).optional(),
   exclude_hostels: z.boolean().default(false),
@@ -116,11 +116,17 @@ export const searchHotelsOutput = {
   customer_request: z.string().nullable(),
   budget: z.object({
     min: z.number().nonnegative().optional(),
-    max: z.number().positive(),
+    max: z.number().positive().optional(),
     type: z.enum(["total", "per_night"]),
     currency: z.literal("UAH"),
   }),
   result_count: z.number().int().nonnegative(),
+  suggestions: z.array(z.object({
+    kind: z.enum(["increase_budget", "widen_radius"]),
+    budget_needed: z.number().positive().optional(),
+    distance_m: z.number().nonnegative().optional(),
+    budget_type: z.enum(["total", "per_night"]).optional(),
+  })).default([]),
   response_guidance: z.array(z.string()),
   hotels: z.array(hotelDetailsOutput.extend({
     priceBasis: z.enum(["bed", "room"]).optional(),
@@ -136,6 +142,9 @@ export const searchHotelsOutput = {
     minimumStayNights: z.number().int().positive().optional(),
     missingPreferences: z.array(z.string()).optional(),
     matchScore: z.number().int().nonnegative(),
+    rankScore: z.number().optional(),
+    priceTier: z.enum(["economy", "mid", "comfort"]).optional(),
+    descriptionMatches: z.array(z.string()).optional(),
   })),
 };
 

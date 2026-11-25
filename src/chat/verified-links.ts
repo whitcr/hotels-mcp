@@ -58,3 +58,48 @@ export function normalizeHotelLinks(text: string, links: Map<number, string>, st
   });
   return {text: normalized, unverified};
 }
+
+export interface HotelCard {
+  id: number;
+  name: string;
+  url: string;
+  photo?: string;
+  stars?: number;
+  total_price?: number;
+  price_per_night?: number;
+  currency?: string;
+  distance_m?: number;
+}
+
+/** Display data for hotels the assistant may recommend; only returned tool data, never model text. */
+export function collectHotelCards(output: unknown, cards: Map<number, HotelCard>): void {
+  if (!output || typeof output !== "object" || !("hotels" in output) || !Array.isArray(output.hotels)) return;
+  const httpUrl = (value: unknown) => {
+    if (typeof value !== "string") return undefined;
+    try { return ["https:", "http:"].includes(new URL(value).protocol) ? value : undefined; } catch { return undefined; }
+  };
+  const finite = (value: unknown) => typeof value === "number" && Number.isFinite(value) ? value : undefined;
+  for (const hotel of output.hotels) {
+    if (!hotel || !Number.isInteger(hotel.id) || typeof hotel.name !== "string" || !httpUrl(hotel.url)) continue;
+    cards.set(hotel.id, {
+      id: hotel.id, name: hotel.name, url: hotel.url,
+      photo: httpUrl(Array.isArray(hotel.photos) ? hotel.photos[0] : undefined),
+      stars: finite(hotel.stars), total_price: finite(hotel.totalPrice), price_per_night: finite(hotel.pricePerNight),
+      currency: typeof hotel.currency === "string" ? hotel.currency : undefined,
+      distance_m: finite(hotel.locationMatch?.distanceMeters),
+    });
+    if (cards.size > 50) cards.delete(cards.keys().next().value!);
+  }
+}
+
+/** Cards for hotels whose verified (dated) link appears in the final answer, in order of appearance. */
+export function cardsForAnswer(text: string, cards: Map<number, HotelCard>, stay?: LinkStay): HotelCard[] {
+  const dated = readLinkStay(stay);
+  return [...cards.values()]
+    .map(card => ({ ...card, url: withStay(card.url, dated) }))
+    .map(card => ({ card, at: text.indexOf(card.url) }))
+    .filter(entry => entry.at >= 0)
+    .sort((a, b) => a.at - b.at)
+    .slice(0, 5)
+    .map(entry => entry.card);
+}

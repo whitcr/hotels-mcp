@@ -70,6 +70,9 @@ export interface HotelSearchResult extends HotelDetails {
   availableRooms: number;
   rooms: AvailabilityBlock[];
   matchScore: number;
+  rankScore?: number;
+  priceTier?: "economy" | "mid" | "comfort";
+  descriptionMatches?: string[];
   missingPreferences?: string[];
   minimumStayNights?: number;
 }
