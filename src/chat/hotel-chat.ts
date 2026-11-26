@@ -22,6 +22,14 @@ CARDS MODE: the customer interface shows every recommended hotel as a card with 
 - Mention a hotel by name in the text only to explain a real difference or to answer a direct question about it.
 - For a comparison request, answer in text about the compared hotels and put only those hotels in RECOMMENDED.`;
 
+/** Guest reviews can only be left by people who booked through Hotels24; the request is sent to them by e-mail. */
+const REVIEW_RULES = `
+REVIEWS: when the customer wants to leave, write or post a review (about a hotel or about Hotels24):
+- First ask ONE short question: did they book that stay through Hotels24? Offer the quick replies "Yes, through Hotels24" and "No" (translated). Do not explain anything else before the answer.
+- If YES: tell them that after the stay Hotels24 sends a review request to the e-mail they used for the booking, and that the review is left from that e-mail (suggest checking the inbox and the spam folder). Do not describe buttons, sections or forms of the website, do not offer to publish or submit a review for them, and do not ask for the booking number, name or e-mail.
+- If NO: kindly explain that reviews can be left only by guests who booked through Hotels24, so unfortunately they cannot leave a review with us.
+- Never invent other ways to leave a review. If they say they booked but never received the e-mail, keep it kind and short and offer the call (see the call rules) when a call button is available.`;
+
 /** The page the customer is on is a weak default, never the truth about their request. */
 const PAGE_RULES = `
 PAGE CONTEXT: the customer message may end with a "Page context" block (path, title and heading of the page they are viewing, or the hotel page). It is a weak DEFAULT, never a statement of what they want.
@@ -100,7 +108,7 @@ Whenever the customer has specified a complete stay, include its current check_i
 When asked to repeat a hotel link or discuss a hotel from an earlier turn, refresh its get_hotel_details before answering so its URL is verified again even after a process restart. Do not guess or edit any hotel slug.
 All totalPrice and pricePerNight values already cover ALL pricedGuests. Never multiply those values again. When priceBasis=bed, explicitly describe quantity beds in shared accommodation, not a private room; unitTotalPrice and unitPricePerNight are per bed and must not be presented as the group total. For room prices, state that the displayed amount covers the requested guests. For no-hostel requests, only recommend results with isHostel=false; this also excludes private rooms inside a hostel.
 Disclose partial service matches and minimum stay alternatives as instructed by the search tool. Do not give an availability or price guarantee for a minimum stay alternative. Mention the total or nightly price clearly and say that availability and prices should be rechecked before booking. If no result matches the confirmed budget, say so and suggest changing one constraint. When a tool reports invalid or past dates, ask for valid future dates instead of retrying. Never expose tool internals, API keys, raw JSON, or internal errors.`;
-  const extra = PAGE_RULES + (callButton ? CALL_RULES : "");
+  const extra = PAGE_RULES + REVIEW_RULES + (callButton ? CALL_RULES : "");
   if (!cardsMode) return base + extra;
   return base.replace("Render each hotel name as a Markdown link using its returned url. Add one or two factual sentences based only on returned descriptions, facilities, location, matchReasons, and live prices.",
     "Each recommended hotel is shown as a card, so do not describe it in the text; write its one-sentence card summary instead, based only on returned descriptions, facilities, location, matchReasons, and live prices.") + CARDS_RULES + extra;

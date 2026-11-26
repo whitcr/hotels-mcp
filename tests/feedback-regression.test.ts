@@ -19,6 +19,8 @@ const rules: Array<[string, RegExp]> = [
   ["never re-ask the departure date", /Do not ask for a departure date already supplied/],
   ["budget is optional, search without it", /search without budget_max right away/],
   ["children's ages are asked", /children's ages/],
+  ["reviews only from guests who booked via Hotels24", /did they book that stay through Hotels24/],
+  ["the review request comes by e-mail", /sends a review request to the e-mail/],
 ];
 
 it("keeps every customer-feedback rule in the model instructions", async () => {
