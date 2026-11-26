@@ -12,6 +12,8 @@ export const telemetrySchema = z.object({
   cards: z.boolean().optional(),
   /** The widget can show a call button for the call center. */
   call: z.boolean().optional(),
+  /** The widget can open a booking form. The server still decides who may use it (CHAT_BOOKING_AUDIENCE). */
+  booking: z.boolean().optional(),
   /** The page the customer is viewing: a weak default for the assistant. */
   page: z.object({
     type: z.string().max(30).optional(), path: z.string().max(300).optional(),
@@ -35,7 +37,7 @@ export interface ChatEvent {
   chat_id: string;
   request_id: string;
   environment: string;
-  event_type: "user_message" | "assistant_message" | "error" | "integration_test" | "search_result" | "hotels_shown" | "ui_click" | "abuse_blocked" | "call_offered";
+  event_type: "user_message" | "assistant_message" | "error" | "integration_test" | "search_result" | "hotels_shown" | "ui_click" | "abuse_blocked" | "call_offered" | "booking_started";
   role: VisitorRole | "assistant" | null;
   message: string | null;
   chat_language: string | null;

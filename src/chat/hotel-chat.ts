@@ -9,6 +9,7 @@ import { splitQuickReplies } from "./quick-replies.js";
 import { DeltaFilter } from "./stream-filter.js";
 import { splitRecommended } from "./recommended.js";
 import { splitCallRequest } from "./call-request.js";
+import { splitBookingRequest } from "./booking-request.js";
 import { abuseReply, detectPromptInjection, looksLikePromptLeak } from "./abuse.js";
 import { randomUUID } from "node:crypto";
 import { ChatGenerationError, UsageAccumulator, type ChatUsage } from "./usage.js";
@@ -30,6 +31,14 @@ REVIEWS: when the customer wants to leave, write or post a review (about a hotel
 - If NO: kindly explain that reviews can be left only by guests who booked through Hotels24, so unfortunately they cannot leave a review with us.
 - Never invent other ways to leave a review. If they say they booked but never received the e-mail, keep it kind and short and offer the call (see the call rules) when a call button is available.`;
 
+/** Booking through the chat. Only for audiences the operator enabled; the form itself lives in the widget. */
+const BOOKING_RULES = `
+BOOKING (enabled for this customer): the interface can open a booking form for one hotel. This section overrides the earlier "read-only" rule about reservations: you still never create, hold, confirm or pay for a reservation yourself, the customer completes it in the form.
+- When the customer clearly wants to book a specific hotel (for example "book it", "забронюй Галіан", or after choosing one of the shown hotels): make sure the stay is known (city, check-in and check-out dates, number of guests); if a value is missing, ask for it first. Then say in ONE short sentence that you are opening the booking form for that hotel, and add on its own line, after the text and before the QUICK_REPLIES line: BOOKING: {"hotel_id":123} with the internal id of that hotel from the tool results or the page context. Add "block_id" only when the customer chose one specific room type from the returned rooms.
+- Never ask for, accept or repeat a name, phone number, e-mail, company details or payment details in the chat: the form collects them. If the customer writes them anyway, do not repeat them and ask them to use the form.
+- Never say that a booking is made, confirmed or paid, and never promise a price, an availability or conditions: the form shows the checked price and conditions and only its button makes the booking.
+- One hotel per booking. For 10 or more guests keep using the group form and the call center instead of the booking form.`;
+
 /** The page the customer is on is a weak default, never the truth about their request. */
 const PAGE_RULES = `
 PAGE CONTEXT: the customer message may end with a "Page context" block (path, title and heading of the page they are viewing, or the hotel page). It is a weak DEFAULT, never a statement of what they want.
@@ -45,7 +54,7 @@ CALL BUTTON: the interface can show a button that calls the Hotels24 call center
 - Do not add the line for questions you can answer fully from the data.
 - If the customer asks for the hotel's own phone number, still explain kindly that Hotels24 does not publish direct hotel contacts, and in the same breath offer the same friendly call to us as the better way to get their question solved.`;
 
-function instructions(language: ChatLanguage, cardsMode = false, callButton = false): string {
+function instructions(language: ChatLanguage, cardsMode = false, callButton = false, bookingForm = false): string {
   const today = todayInKyiv();
   const weekendStart = new Date(`${today}T00:00:00Z`);
   const weekday = weekendStart.getUTCDay();
@@ -108,7 +117,7 @@ Whenever the customer has specified a complete stay, include its current check_i
 When asked to repeat a hotel link or discuss a hotel from an earlier turn, refresh its get_hotel_details before answering so its URL is verified again even after a process restart. Do not guess or edit any hotel slug.
 All totalPrice and pricePerNight values already cover ALL pricedGuests. Never multiply those values again. When priceBasis=bed, explicitly describe quantity beds in shared accommodation, not a private room; unitTotalPrice and unitPricePerNight are per bed and must not be presented as the group total. For room prices, state that the displayed amount covers the requested guests. For no-hostel requests, only recommend results with isHostel=false; this also excludes private rooms inside a hostel.
 Disclose partial service matches and minimum stay alternatives as instructed by the search tool. Do not give an availability or price guarantee for a minimum stay alternative. Mention the total or nightly price clearly and say that availability and prices should be rechecked before booking. If no result matches the confirmed budget, say so and suggest changing one constraint. When a tool reports invalid or past dates, ask for valid future dates instead of retrying. Never expose tool internals, API keys, raw JSON, or internal errors.`;
-  const extra = PAGE_RULES + REVIEW_RULES + (callButton ? CALL_RULES : "");
+  const extra = PAGE_RULES + REVIEW_RULES + (callButton ? CALL_RULES : "") + (bookingForm ? BOOKING_RULES : "");
   if (!cardsMode) return base + extra;
   return base.replace("Render each hotel name as a Markdown link using its returned url. Add one or two factual sentences based only on returned descriptions, facilities, location, matchReasons, and live prices.",
     "Each recommended hotel is shown as a card, so do not describe it in the text; write its one-sentence card summary instead, based only on returned descriptions, facilities, location, matchReasons, and live prices.") + CARDS_RULES + extra;
@@ -237,7 +246,7 @@ function groupHelpLine(language: ChatLanguage): string {
 
 /** Privacy-safe funnel facts about one turn; never contains message text. */
 export interface ChatAnalytics {
-  kind: "search_result" | "hotels_shown" | "abuse_blocked" | "call_offered";
+  kind: "search_result" | "hotels_shown" | "abuse_blocked" | "call_offered" | "booking_started";
   detail: Record<string, string | number | boolean | number[]>;
 }
 
@@ -262,7 +271,10 @@ export interface ChatStreamHooks {
 }
 
 export interface PageContext { type?: string; path?: string; title?: string; h1?: string; hotel_id?: number; hotel_name?: string }
-export interface ChatOptions { cards?: boolean; call?: boolean; page?: PageContext }
+export interface ChatOptions { cards?: boolean; call?: boolean; booking?: boolean; page?: PageContext }
+
+/** Opens the booking form in the widget; the server side re-checks availability and price. */
+export interface BookingIntent { hotel_id: number; block_id?: number; guests: number; check_in: string; check_out: string }
 
 function pageNote(page?: PageContext): string {
   if (!page) return "";
@@ -290,6 +302,8 @@ export interface ChatResult {
   analytics: ChatAnalytics[];
   /** Shown as a call button: the question needs a call center agent. */
   call_help: CallHelp | null;
+  /** The customer wants to book: the widget opens the booking form. */
+  booking_intent: BookingIntent | null;
   /** The conversation must start over (an attempt to hijack the assistant). */
   reset: boolean;
   /** Internal diagnostics only; the server logs it and never sends it to the browser. */
@@ -300,6 +314,7 @@ export class HotelChat {
   private readonly client: OpenAI;
   private readonly languages = new Map<string, ChatLanguage>();
   private readonly stays = new Map<string, LinkStay | undefined>();
+  private readonly guests = new Map<string, number | undefined>();
   private readonly references = new Map<string, Map<number, string>>();
 
   /** Set when the model rejected the configured reasoning depth: from then on it is simply not sent. */
@@ -326,6 +341,7 @@ export class HotelChat {
   private async respondWithUsage(message: string, previousResponseId: string | undefined, languageHint: ChatLanguage | undefined, usage: UsageAccumulator, hooks?: ChatStreamHooks, options: ChatOptions = {}): Promise<ChatResult> {
     const cardsMode = options.cards === true;
     const callButton = options.call === true;
+    const bookingForm = options.booking === true;
     // Hijack attempts are answered at once, without a model call: no tokens are spent and the chat starts over.
     const ownWords = message.split(/\n\nHotel page context/i)[0] ?? message;
     if (detectPromptInjection(ownWords)) {
@@ -333,7 +349,7 @@ export class HotelChat {
       return {
         response_id: `blocked_${randomUUID()}`, message: abuseReply(blockedLanguage), language: blockedLanguage,
         usage: { input_tokens: 0, output_tokens: 0 }, quick_replies: [], hotel_cards: [], handoff: null, call_help: null, reset: true,
-        analytics: [{ kind: "abuse_blocked", detail: { reason: "prompt_injection" } }], timing: { model_ms: [], tools: [] },
+        analytics: [{ kind: "abuse_blocked", detail: { reason: "prompt_injection" } }], timing: { model_ms: [], tools: [] }, booking_intent: null,
       };
     }
     const safely = (action: () => void) => { try { action(); } catch { /* A closed client must not abort the answer. */ } };
@@ -376,6 +392,7 @@ export class HotelChat {
     };
     let language = detectMessageLanguage(message);
     let stay = previousResponseId ? this.stays.get(previousResponseId) : undefined;
+    let knownGuests = previousResponseId ? this.guests.get(previousResponseId) : undefined;
     if (previousResponseId) {
       language ??= this.languages.get(previousResponseId);
       if (!this.stays.has(previousResponseId) || !language) {
@@ -383,11 +400,13 @@ export class HotelChat {
         const previous = await this.client.responses.retrieve(previousResponseId);
         language ??= validLanguage(previous.metadata?.chat_language) ?? detectMessageLanguage(previous.output_text ?? "");
         stay = readLinkStay(previous.metadata);
+        const storedGuests = Number(previous.metadata?.guests);
+        knownGuests = Number.isInteger(storedGuests) && storedGuests > 0 ? storedGuests : undefined;
       }
     }
     language ??= validLanguage(languageHint) ?? "uk";
-    const policy = instructions(language, cardsMode, callButton);
-    const metadata = (): Record<string, string> => ({ chat_language: language, ...(stay ?? {}) });
+    const policy = instructions(language, cardsMode, callButton, bookingForm);
+    const metadata = (): Record<string, string> => ({ chat_language: language, ...(stay ?? {}), ...(knownGuests ? { guests: String(knownGuests) } : {}) });
     const links = new Map(previousResponseId ? this.references.get(previousResponseId) : undefined);
     const cards = new Map<number, HotelCard>();
     const analytics: ChatAnalytics[] = [];
@@ -409,7 +428,8 @@ export class HotelChat {
         let answer = splitQuickReplies(response.output_text);
         let recommended = splitRecommended(answer.text);
         let callReq = splitCallRequest(recommended.text);
-        let linked = normalizeHotelLinks(callReq.text, links, stay);
+        let bookingReq = splitBookingRequest(callReq.text);
+        let linked = normalizeHotelLinks(bookingReq.text, links, stay);
         const issues = answerIssues(linked.text, language);
         const listed = cardsMode ? cardsForIds(recommended.items, cards, stay) : [];
         const lowered = linked.text.toLocaleLowerCase();
@@ -431,7 +451,8 @@ export class HotelChat {
           answer = splitQuickReplies(response.output_text);
           recommended = splitRecommended(answer.text);
           callReq = splitCallRequest(recommended.text);
-          linked = normalizeHotelLinks(callReq.text, links, stay);
+          bookingReq = splitBookingRequest(callReq.text);
+          linked = normalizeHotelLinks(bookingReq.text, links, stay);
           // An unverified link is not worth failing the whole turn: keep the words, drop the link.
           if (linked.unverified && !answerIssues(linked.text, language).length) {
             linked = { text: stripUnverifiedLinks(linked.text, links, stay), unverified: false };
@@ -441,17 +462,29 @@ export class HotelChat {
         this.languages.set(response.id, language);
         this.references.set(response.id, links);
         this.stays.set(response.id, stay);
+        this.guests.set(response.id, knownGuests);
         if (this.languages.size > 2000) {
           const oldest = this.languages.keys().next().value!;
           this.languages.delete(oldest);
           this.references.delete(oldest);
           this.stays.delete(oldest);
+          this.guests.delete(oldest);
         }
         // Instruction text or a secret in an answer never reaches the customer.
         const leaked = looksLikePromptLeak(linked.text);
         if (leaked) linked = { text: abuseReply(language), unverified: false };
         const chosen = leaked ? [] : cardsForIds(recommended.items, cards, stay);
         const shown = leaked ? [] : chosen.length ? chosen : cardsForAnswer(linked.text, cards, stay);
+        // A booking form opens only for a hotel this conversation has really shown, with a stay and a guest count known to the server.
+        let bookingIntent: BookingIntent | null = null;
+        if (bookingForm && bookingReq.booking && !leaked) {
+          const hotelId = bookingReq.booking.hotel_id;
+          const known = links.has(hotelId) || cards.has(hotelId) || options.page?.hotel_id === hotelId;
+          if (known && stay && knownGuests && knownGuests < GROUP_HANDOFF_GUESTS) {
+            bookingIntent = { hotel_id: hotelId, ...(bookingReq.booking.block_id ? { block_id: bookingReq.booking.block_id } : {}), guests: knownGuests, check_in: stay.check_in, check_out: stay.check_out };
+            analytics.push({ kind: "booking_started", detail: { hotel_id: hotelId, guests: knownGuests, with_room: Boolean(bookingReq.booking.block_id) } });
+          }
+        }
         let callHelp: CallHelp | null = null;
         if (callButton && callReq.call && !leaked) {
           const id = callReq.call.hotel_id;
@@ -465,7 +498,7 @@ export class HotelChat {
           ? { reason: "large_group" as const, form_url: GROUP_FORM_URL, phone: CALL_CENTER_PHONE } : null;
         return {
           response_id: response.id, message: formatAnswerDates(withoutBold(largestGroup >= GROUP_HANDOFF_GUESTS && !linked.text.includes(GROUP_FORM_URL) ? `${linked.text}\n\n${groupHelpLine(language)}` : linked.text)), quick_replies: answer.quickReplies, language,
-          usage: usage.snapshot(), hotel_cards: shown, handoff, analytics, timing, call_help: callHelp, reset: leaked,
+          usage: usage.snapshot(), hotel_cards: shown, handoff, analytics, timing, call_help: callHelp, booking_intent: bookingIntent, reset: leaked,
         };
       }
       if (hooks?.onStatus) safely(() => hooks.onStatus!(phaseFor(calls.map(call => call.name))));
@@ -485,7 +518,10 @@ export class HotelChat {
           // Details dates are conversation context; the read-only MCP detail tool needs only IDs/language.
           if (call.name === "get_hotel_details") { delete args.check_in; delete args.check_out; }
           if (call.name !== "check_hotel_availability") args.language = language;
-          if (typeof args.guests === "number" && Number.isFinite(args.guests)) largestGroup = Math.max(largestGroup, args.guests);
+          if (typeof args.guests === "number" && Number.isFinite(args.guests)) {
+            largestGroup = Math.max(largestGroup, args.guests);
+            if (Number.isInteger(args.guests) && args.guests > 0 && args.guests <= 60) knownGuests = args.guests;
+          }
           output = await this.callTool(call.name, args);
           collectHotelLinks(output, links);
           collectHotelCards(output, cards);

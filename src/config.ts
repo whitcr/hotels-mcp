@@ -25,6 +25,8 @@ export interface Config {
   openAiModel: string;
   /** Reasoning depth of the model; lower is faster. "minimal" cuts a typical answer from ~30 s to ~10 s (checked on the scenario suite); set OPENAI_REASONING_EFFORT=medium to go back to the old behaviour. */
   openAiReasoningEffort?: ReasoningEffort;
+  /** Who may start a booking in the chat: nobody, only verified operators (first release) or everyone. */
+  bookingAudience: "off" | "operators" | "all";
 }
 
 function positiveInteger(value: string | undefined, fallback: number): number {
@@ -51,6 +53,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     rateLimitMaxRequests: positiveInteger(env.MCP_RATE_LIMIT_MAX_REQUESTS, 120),
     openAiApiKey: env.OPENAI_API_KEY || undefined,
     openAiModel,
+    bookingAudience: (["off", "operators", "all"] as const).find(value => value === env.CHAT_BOOKING_AUDIENCE) ?? "operators",
     openAiReasoningEffort: (REASONING_EFFORTS).find(value => value === env.OPENAI_REASONING_EFFORT) ?? defaultReasoningEffort(openAiModel),
   };
 
