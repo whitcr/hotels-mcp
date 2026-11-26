@@ -6,7 +6,7 @@ export function validLanguage(value: unknown): ChatLanguage | undefined {
 
 // Only the customer's own words determine language, never appended hotel data.
 export function detectMessageLanguage(message: string): ChatLanguage | undefined {
-  const text=message.split(/\n\nHotel page context/i)[0]!.replace(/https?:\/\/\S+/g,"").toLowerCase();
+  const text=message.split(/\n\n(?:Hotel page|Page) context/i)[0]!.replace(/https?:\/\/\S+/g,"").toLowerCase();
   const explicit=text.match(/^(?:(?:please\s+)?(?:reply|respond|answer|write)(?:\s+to me)?(?:\s+in)?|(?:відповідай|пиши|отвечай|ответь)(?:\s+на)?)\s+(english|англійськ\p{L}*|английск\p{L}*|ukrainian|українськ\p{L}*|украинск\p{L}*|russian|російськ\p{L}*|русск\p{L}*)/iu);
   if(explicit){
     if(/^(english|англій|англий)/u.test(explicit[1]!))return "en";

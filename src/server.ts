@@ -236,7 +236,7 @@ const chatRoute = (streaming: boolean) => async (request: Request, response: Res
   try {
     const { usage, analytics, timing, ...result } = await hotelChat.respond(message, previousResponseId, telemetry?.language,
       streaming ? { onDelta: text => send("delta", { text }), onStatus: phase => send("status", { phase }) } : undefined,
-      { cards: telemetry?.cards === true });
+      { cards: telemetry?.cards === true, call: telemetry?.call === true, page: telemetry?.page });
     // Where the time goes: model rounds and tool calls (no message text).
     console.log(JSON.stringify({ event: "chat_timing", request_id: response.locals.requestId, total_ms: Date.now() - startedAt, ...timing }));
     for (const item of analytics) {

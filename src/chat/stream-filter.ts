@@ -1,5 +1,5 @@
-const MARKERS = ["QUICK_REPLIES:", "RECOMMENDED:"];
-const quickRepliesLine = /^[ \t]*RECOMMENDED|QUICK_REPLIES[ \t]*:/im;
+const MARKERS = ["QUICK_REPLIES:", "RECOMMENDED:", "CALL_CENTER:"];
+const quickRepliesLine = /^[ \t]*(?:RECOMMENDED|CALL_CENTER)|QUICK_REPLIES[ \t]*:/im;
 const openLink = /^\[[^\]\n]*(?:\](?:\([^)\s]*)?)?$/;
 const completeLink = /\[([^\]\n]+)\]\([^)\s]*\)/g;
 

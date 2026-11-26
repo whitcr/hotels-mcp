@@ -10,13 +10,21 @@ export const telemetrySchema = z.object({
   message: z.string().min(1).max(4000).optional(),
   /** The widget can render hotel cards: the assistant then keeps hotel details out of the text. */
   cards: z.boolean().optional(),
+  /** The widget can show a call button for the call center. */
+  call: z.boolean().optional(),
+  /** The page the customer is viewing: a weak default for the assistant. */
+  page: z.object({
+    type: z.string().max(30).optional(), path: z.string().max(300).optional(),
+    title: z.string().max(300).optional(), h1: z.string().max(300).optional(),
+    hotel_id: z.number().int().positive().optional(), hotel_name: z.string().max(200).optional(),
+  }).optional(),
   operator_token: z.string().length(32).regex(/^[a-f0-9]{32}$/i).optional(),
 });
 
 /** Frontend funnel events: what was clicked, never free text or personal data. */
 export const uiEventSchema = z.object({
   chat_id: z.string().regex(/^[a-f0-9-]{24,36}$/i),
-  type: z.enum(["hotel_click", "quick_reply_click", "handoff_click", "hotel_card_click", "compare_click"]),
+  type: z.enum(["hotel_click", "quick_reply_click", "handoff_click", "hotel_card_click", "compare_click", "call_click", "call_copy", "fullscreen_open"]),
   hotel_id: z.number().int().positive().optional(),
   environment: z.enum(["prod", "stage", "local"]).optional(),
 });
@@ -27,7 +35,7 @@ export interface ChatEvent {
   chat_id: string;
   request_id: string;
   environment: string;
-  event_type: "user_message" | "assistant_message" | "error" | "integration_test" | "search_result" | "hotels_shown" | "ui_click";
+  event_type: "user_message" | "assistant_message" | "error" | "integration_test" | "search_result" | "hotels_shown" | "ui_click" | "abuse_blocked" | "call_offered";
   role: VisitorRole | "assistant" | null;
   message: string | null;
   chat_language: string | null;
